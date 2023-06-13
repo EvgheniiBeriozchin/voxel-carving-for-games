@@ -12,12 +12,12 @@ find_package(Eigen3 REQUIRED)
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
 set(UTILS
-    utils/*
+    utils/utils.cpp
 )
 
 add_executable(voxel-carving ${UTILS} main.cpp)
 
 if(WIN32)
-    target_compile_definitions(gaussian PUBLIC NOMINMAX _USE_MATH_DEFINES)
-    set_property(TARGET gaussian PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/)
+    target_compile_definitions(voxel-carving PUBLIC NOMINMAX _USE_MATH_DEFINES)
+    set_property(TARGET voxel-carving PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/)
 endif(WIN32)
