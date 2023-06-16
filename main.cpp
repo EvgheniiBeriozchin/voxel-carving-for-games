@@ -2,12 +2,12 @@
 #include <iostream>
 #include "voxel/VoxelGridExporter.h"
 
-#define RunVoxeGridTest 1
+#define RunVoxelGridTest 1
 
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
-	if (RunVoxeGridTest) {
+	if (RunVoxelGridTest) {
 		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(100, 100, 100), 1);
 		std::cout << grid.GetVoxelCount() << std::endl;
 		auto v = grid.GetVoxelCenter(Eigen::Vector3i(1, 0, 0));
