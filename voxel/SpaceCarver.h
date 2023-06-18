@@ -2,7 +2,7 @@
 #include "VoxelGrid.h"
 
 class Camera {
-	// PixelGrid / image for marking while sweeping
+	// TODO: PixelGrid / image for marking while sweeping
 public:
 	const Eigen::Vector2i& ProjectIntoCameraSpace(Eigen::Vector3d worldPoint){
 		// TODO: project into camera pixel space
@@ -77,6 +77,8 @@ public:
 	}
 
 	static void MultiSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras) {
+		//TODO: Step3 / Step4
+		// Plane sweep in all directions
 		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
 		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
 		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
@@ -84,35 +86,35 @@ public:
 		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
 		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
 		//TODO: Change Voxelgrid to use properties like cameras/ consistency-check-counts
-		//TODO: Step3 / Step4
 	}
 private:
 	static void SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
+		// Peel a single layer
 		for (int x = xStart; x <= xEnd; x++) {
 			for (int y = yStart; y <= yEnd; y++) {
 				for (int z = zStart; z <= zEnd; z++) {
 					Eigen::Vector3i voxel_grid_pos = Eigen::Vector3i(x, y, z);
-					if (!IsSurfaceVoxel(voxel_grid, voxel_grid_pos))// Skip voxels that are the interior of the object (no need to check them TODO: validate if thats true)
+					if (!IsSurfaceVoxel(voxel_grid, voxel_grid_pos))// Skip voxels that are the interior of the object (no need to check them TODO: validate if thats correct)
 						continue;
 					Voxel& voxel = voxel_grid.GetVoxel(voxel_grid_pos);
 					Eigen::Vector3d voxel_world_pos = voxel_grid.GetVoxelCenter(voxel_grid_pos);
-					std::vector<Camera> cameras = GetCamerasForPlaneVoxel(voxel_world_pos, planeNormal, cameras);
+					std::vector<Camera> cameras = GetCamerasForPlaneVoxel(voxel_world_pos, planeNormal, cameras);// Get cameras above plane
 					std::vector<Eigen::Vector2i> pixelsPositions;
 					std::vector<Camera> unmarkedPixelCameras;
-					for (int i = 0; i < cameras.size(); i++) {// Select cameras and where pixel is unmarked
+					for (int i = 0; i < cameras.size(); i++) {// Select cameras and pixel positions where pixel is unmarked
 						Eigen::Vector2i pixelPos = cameras[i].ProjectIntoCameraSpace(voxel_world_pos);
 						if (!cameras[i].IsMarked(pixelPos)) {
 							unmarkedPixelCameras.push_back(cameras[i]);
 							pixelsPositions.push_back(pixelPos);
 						}
 					}
-					if (CheckPhotoConsistency(voxel_world_pos, pixelsPositions, unmarkedPixelCameras)) {
+					if (CheckPhotoConsistency(voxel_world_pos, pixelsPositions, unmarkedPixelCameras)) { // Check Photo consistency
 						for (int i = 0; i < unmarkedPixelCameras.size(); i++)
 						{
 							unmarkedPixelCameras[i].MarkPixel(pixelsPositions[i]);
 						}
 					}
-					else {
+					else {// carve voxel
 						voxel_grid.RemoveVoxel(voxel_grid_pos);
 					}
 				}
@@ -131,10 +133,10 @@ private:
 						neighborPosition.y() < 0 || neighborPosition.y() >= dims.y() ||
 						neighborPosition.z() < 0 || neighborPosition.z() >= dims.z())
 					{
-						return true;	// voxel_grid boundary
+						return true;	// voxel_grid boundary is always surface
 					}
 					const Voxel& neighbor = voxel_grid.GetVoxel(neighborPosition);
-					if (neighbor.value == 0) {
+					if (neighbor.value == 0) {// a neighbor is not set => is on surface
 						return true;
 					}
 				}
@@ -152,7 +154,8 @@ private:
 		}
 		return cams;
 	}
-	static bool IsCameraAbovePlane(const Camera& camera, const Eigen::Vector3d& planePoint, const Eigen::Vector3d& planeNormal) {// for better result use clipping in pyramidal beam instead of plane (only consider those that are)
+	static bool IsCameraAbovePlane(const Camera& camera, const Eigen::Vector3d& planePoint, const Eigen::Vector3d& planeNormal) {
+		// for better result use clipping in pyramidal beam instead of plane
 		// TODO:
 		// double distance = (camera.point - planePoint).dot(planeNormal);
 		// return distance > 0.0;
