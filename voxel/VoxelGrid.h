@@ -74,6 +74,62 @@ public:
 
         return positions;
     }
+    const std::vector<Eigen::Vector3d> GetVoxelCenterPoints(const std::vector<Eigen::Vector3i> voxels) {
+        std::vector<Eigen::Vector3d> positions;
+
+        for each (auto pos in voxels)
+        {
+            const Eigen::Vector3d centerPosition = GetVoxelCenter(pos);
+            positions.push_back(centerPosition);
+        }
+        return positions;
+    }
+
+    const std::vector<Eigen::Vector3i> GetBoundaryVoxels() {
+        std::vector<Eigen::Vector3i> boundaryVoxels;
+        for (int x = 0; x < dimensions_.x(); ++x) {
+            for (int y = 0; y < dimensions_.y(); ++y) {
+                for (int z = 0; z < dimensions_.z(); ++z) {
+                    bool isBoundaryVoxel = false;
+                    if (GetVoxel(Eigen::Vector3i(x, y, z)).value == 0)
+                        continue;
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        for (int dy = -1; dy <= 1; ++dy) {
+                            for (int dz = -1; dz <= 1; ++dz) {
+                                // Skip the current voxel
+                                if (dx == 0 && dy == 0 && dz == 0)
+                                    continue;
+
+                                const Eigen::Vector3i neighborPosition = Eigen::Vector3i(x, y, z) + Eigen::Vector3i(dx, dy, dz);
+                                if (neighborPosition.x() < 0 || neighborPosition.x() >= dimensions_.x() ||
+                                    neighborPosition.y() < 0 || neighborPosition.y() >= dimensions_.y() ||
+                                    neighborPosition.z() < 0 || neighborPosition.z() >= dimensions_.z())
+                                {
+                                    isBoundaryVoxel = true;
+                                    break;
+                                }
+
+                                const Voxel& neighbor = GetVoxel(neighborPosition);
+
+                                // If a neighboring voxel is empty, mark the current voxel as a boundary voxel
+                                if (neighbor.value == 0) {
+                                    isBoundaryVoxel = true;
+                                    break;
+                                }
+                            }
+                            if (isBoundaryVoxel)
+                                break;
+                        }
+                        if (isBoundaryVoxel)
+                            break;
+                    }
+                    if (isBoundaryVoxel)
+                        boundaryVoxels.push_back(Eigen::Vector3i(x, y, z));
+                }
+            }
+        }
+        return boundaryVoxels;
+    }
 
     const Eigen::Vector3d& GetVoxelCenter(const Eigen::Vector3i& voxelPosition) {
         return origin_ + voxelCenterOffset_ + (voxelSize_ * voxelPosition.cast<double>());

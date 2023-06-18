@@ -17,7 +17,8 @@ public:
 
         // Write the OFF file header
         file << "OFF" << std::endl;
-        std::vector<Eigen::Vector3d> voxels = voxelGrid.GetSetVoxelCenterPoints();
+        std::vector<Eigen::Vector3i> voxelpositions = voxelGrid.GetBoundaryVoxels();
+        std::vector<Eigen::Vector3d> voxels = voxelGrid.GetVoxelCenterPoints(voxelpositions);
         file << voxels.size() << " 0 0" << std::endl;
 
         // Write the voxel grid vertices
