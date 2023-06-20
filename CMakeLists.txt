@@ -6,8 +6,10 @@ project(voxel-carving)
 set(CMAKE_CXX_STANDARD 14)
 set(LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libs CACHE PATH "Path to lib folder")
 set(Eigen3_DIR ${LIBRARY_DIR}/Eigen/share/eigen3/cmake CACHE PATH "Path to installed Eigen")
+set(OpenCV_DIR ${LIBRARY_DIR}/OpenCV/build CACHE PATH "Path to installed OpenCV")
 
 find_package(Eigen3 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
@@ -16,6 +18,11 @@ set(UTILS
 )
 
 add_executable(voxel-carving ${UTILS} main.cpp)
+
+target_link_libraries(voxel-carving Eigen3::Eigen)
+target_link_libraries(voxel-carving ${OpenCV_LIBS})
+target_include_directories(voxel-carving PUBLIC ${EIGEN3_INCLUDE_DIR})
+
 
 if(WIN32)
     target_compile_definitions(voxel-carving PUBLIC NOMINMAX _USE_MATH_DEFINES)
