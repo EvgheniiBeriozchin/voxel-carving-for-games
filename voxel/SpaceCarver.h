@@ -72,15 +72,17 @@ public:
 		bool terminate = false;
 		while (!terminate)// continue unit no change
 		{
+			bool change = false;
 			// Step 2
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
-			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
+			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
 			// Step 3
-			terminate |= MultiSweepConsistency(voxel_grid, cameras);
+			change |= MultiSweepConsistency(voxel_grid, cameras);
+			terminate = !change;
 		}
 	}
 private:
