@@ -7,9 +7,11 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include "../utils/Camera.h"
 
 struct Voxel {
 	int value;
+    std::vector<Camera> cameras;
     Voxel() :value(0){}
 	Voxel(int val) : value(val) {}
 };
@@ -83,6 +85,22 @@ public:
             positions.push_back(centerPosition);
         }
         return positions;
+    }
+
+    const std::vector<Eigen::Vector3i> GetSetVoxels() {
+        std::vector<Eigen::Vector3i> voxelsPositions;
+        for (int x = 0; x < dimensions_.x(); ++x) {
+            for (int y = 0; y < dimensions_.y(); ++y) {
+                for (int z = 0; z < dimensions_.z(); ++z) {
+                    const Eigen::Vector3i voxelPosition(x, y, z);
+                    Voxel& voxel = GetVoxel(voxelPosition);
+                    if (voxel.value == 1) {
+                        voxelsPositions.push_back(voxelPosition);
+                    }
+                }
+            }
+        }
+        return voxelsPositions;
     }
 
     const std::vector<Eigen::Vector3i> GetBoundaryVoxels() {

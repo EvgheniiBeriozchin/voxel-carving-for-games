@@ -8,12 +8,12 @@ const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
 	if (RunVoxelGridTest) {
-		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(100, 100, 100), 1);
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(50, 50, 50), 1);
 		std::cout << grid.GetVoxelCount() << std::endl;
 		auto v = grid.GetVoxelCenter(Eigen::Vector3i(1, 0, 0));
-		for (int i = 0; i < 100; i++) {
-			for (int j = 30; j < 70; j++) {
-				for (int k = 30; k < 70; k++) {
+		for (int i = 0; i < 50; i++) {
+			for (int j = 30; j < 40; j++) {
+				for (int k = 30; k < 40; k++) {
 					grid.RemoveVoxel(Eigen::Vector3i(i, j, k));
 				}
 			}

@@ -1,27 +1,16 @@
 #pragma once
 #include "VoxelGrid.h"
+#include "../utils/Camera.h"
 
-class Camera {
-	// TODO: PixelGrid / image for marking while sweeping
-public:
-	const Eigen::Vector2i& ProjectIntoCameraSpace(Eigen::Vector3d worldPoint){
-		// TODO: project into camera pixel space
-	}
-	bool IsMarked(Eigen::Vector2i& pixel) {
-		// TODO: Check if pixel is unmarked
-	}
-	void MarkPixel(Eigen::Vector2i& pixel) {
-		// TODO: Mark pixel
-	}
-};
 
 
 class SpaceCarver {
 public:
 	enum SpaceCarvingDirection { XPos, XNeg, YPos, YNeg, ZPos, ZNeg };
 
-	static void PlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras, SpaceCarvingDirection direction) {
+	static bool PlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras, SpaceCarvingDirection direction) {
 		Eigen::Vector3d planeNormal;
+		bool removed = false;
 		int xStart, xEnd, yStart, yEnd, zStart, zEnd;
 		xStart = yStart = zStart = 0;
 		xEnd = voxel_grid.GetDimensions().x();
@@ -33,62 +22,70 @@ public:
 			planeNormal = Eigen::Vector3d(-1, 0, 0);
 			xEnd = 0;// Every single sweep only 1 layer at a time
 			for (int x = 0; x < voxel_grid.GetDimensions().x(); x++) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		case SpaceCarvingDirection::XNeg:
 			planeNormal = Eigen::Vector3d(1, 0, 0);
 			xEnd = 0;
 			for (int x = voxel_grid.GetDimensions().x() -1; x >= 0; x--) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		case SpaceCarvingDirection::YPos:
 			planeNormal = Eigen::Vector3d(0, -1, 0);
 			yEnd = 0;
 			for (int y = 0; y < voxel_grid.GetDimensions().y(); y++) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		case SpaceCarvingDirection::YNeg:
 			planeNormal = Eigen::Vector3d(0, 1, 0);
 			yEnd = 0;
 			for (int y = voxel_grid.GetDimensions().y() - 1; y >= 0; y--) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		case SpaceCarvingDirection::ZPos:
 			planeNormal = Eigen::Vector3d(0, 0 , -1);
 			zEnd = 0;
 			for (int z = 0; z < voxel_grid.GetDimensions().z(); z++) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		case SpaceCarvingDirection::ZNeg:
 			planeNormal = Eigen::Vector3d(0, 0, 1);
 			zEnd = 0;
 			for (int z = voxel_grid.GetDimensions().z() - 1; z >= 0; z--) {
-				SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
+				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, zStart, zEnd);
 			}
 			break;
 		default:
 			break;
 		}
+		return removed;
 	}
 
-	static void MultiSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras) {
+	static void MultiSweep(VoxelGrid& voxel_grid, const std::vector<Camera> cameras) {
 		//TODO: Step3 / Step4
 		// Plane sweep in all directions
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
-		PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
-		//TODO: Change Voxelgrid to use properties like cameras/ consistency-check-counts
+		bool terminate = false;
+		while (!terminate)// continue unit no change
+		{
+			// Step 2
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
+			terminate |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
+			// Step 3
+			terminate |= MultiSweepConsistency(voxel_grid, cameras);
+		}
 	}
 private:
-	static void SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
+	static bool SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera> cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
+		bool removed = false;
 		// Peel a single layer
 		for (int x = xStart; x <= xEnd; x++) {
 			for (int y = yStart; y <= yEnd; y++) {
@@ -112,14 +109,17 @@ private:
 						for (int i = 0; i < unmarkedPixelCameras.size(); i++)
 						{
 							unmarkedPixelCameras[i].MarkPixel(pixelsPositions[i]);
+							voxel.cameras.push_back(unmarkedPixelCameras[i]);
 						}
 					}
 					else {// carve voxel
 						voxel_grid.RemoveVoxel(voxel_grid_pos);
+						removed = true;
 					}
 				}
 			}
 		}
+		return removed;
 	}
 	static bool IsSurfaceVoxel(VoxelGrid& voxel_grid, Eigen::Vector3i voxel_pos) {
 		auto dims = voxel_grid.GetDimensions();
@@ -145,7 +145,7 @@ private:
 		return false;	// fully enclosed in other set voxels
 	}
 
-	static std::vector<Camera> GetCamerasForPlaneVoxel(const Eigen::Vector3d& voxel_world_pos, const Eigen::Vector3d& planeNormal, const std::vector<Camera>& cameras) {
+	static std::vector<Camera> GetCamerasForPlaneVoxel(const Eigen::Vector3d& voxel_world_pos, const Eigen::Vector3d& planeNormal, const std::vector<Camera> cameras) {
 		std::vector<Camera> cams;
 		for each (Camera camera in cameras)
 		{
@@ -161,8 +161,26 @@ private:
 		// return distance > 0.0;
 		return false;
 	}
-	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera>& PixelCameras) {
+	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras) {
 		//TODO:
 	}
 
+	static bool MultiSweepConsistency(VoxelGrid& voxel_grid, const std::vector<Camera> cameras) {
+		std::vector<Eigen::Vector3i> setVoxelPositions = voxel_grid.GetSetVoxels();
+		bool removed = false;
+		for (int i = 0; i < setVoxelPositions.size(); i++) {
+			std::vector<Eigen::Vector2i> pixelsPositions;
+			Voxel& voxel = voxel_grid.GetVoxel(setVoxelPositions[i]);
+			Eigen::Vector3d voxel_world_pos = voxel_grid.GetVoxelCenter(setVoxelPositions[i]);
+			for (int c = 0; c < voxel.cameras.size(); c++) {
+				Eigen::Vector2i pixelPos = voxel.cameras[c].ProjectIntoCameraSpace(voxel_world_pos);
+				pixelsPositions.push_back(pixelPos);
+			}
+			if (!CheckPhotoConsistency(voxel_world_pos, pixelsPositions, voxel.cameras)) {// Step 3b
+				voxel_grid.RemoveVoxel(setVoxelPositions[i]);
+				removed = true;
+			}
+		}
+		return removed;
+	}
 };
