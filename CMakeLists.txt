@@ -11,10 +11,6 @@ set(OpenCV_DIR ${LIBRARY_DIR}/opencv-build/cmake CACHE PATH "Path to installed O
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
-# include_directories(${OpenCV_LIBS})
-# include_directories(${OpenCV_INCLUDE_DIRS})
-# link_directories(${OpenCV_LIB_DIR})
-
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
 set(UTILS
