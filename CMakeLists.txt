@@ -16,6 +16,8 @@ set(UTILS
 )
 
 add_executable(voxel-carving ${UTILS} main.cpp)
+target_link_libraries(voxel-carving Eigen3::Eigen)
+target_include_directories(voxel-carving PUBLIC ${EIGEN3_INCLUDE_DIR})
 
 if(WIN32)
     target_compile_definitions(voxel-carving PUBLIC NOMINMAX _USE_MATH_DEFINES)
