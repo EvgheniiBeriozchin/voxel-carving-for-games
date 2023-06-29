@@ -19,6 +19,9 @@ set(UTILS
 
 set(HEADER_FILES 
     Camera.h
+    voxel/SpaceCarver.h
+    voxel/VoxelGrid.h
+    voxel/VoxelGridExporter.h
 )
 
 add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)

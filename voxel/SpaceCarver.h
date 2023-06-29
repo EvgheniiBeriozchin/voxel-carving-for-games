@@ -1,6 +1,6 @@
 #pragma once
 #include "VoxelGrid.h"
-#include "../utils/Camera.h"
+#include "../Camera.h"
 
 
 

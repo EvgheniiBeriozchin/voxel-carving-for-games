@@ -3,19 +3,24 @@
 
 #include "voxel/VoxelGrid.h"
 #include "voxel/VoxelGridExporter.h"
+#include "voxel/SpaceCarver.h"
 #include "Camera.h"
+#include "utils/utils.cpp"
 
 #define RUN_CAMERA_CALIBRATION 1
-#define RUN_POSE_ESTIMATION_TEST 2
-#define RUN_VOXEL_GRID_TEST 3
+#define RUN_POSE_ESTIMATION_TEST 0
+#define RUN_VOXEL_GRID_TEST 0
+#define RUN_VOXEL_CARVING 1
 
+
+const int NUM_PROCESSED_FRAMES = 1000;
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
 	cv::VideoCapture calibrationVideo, reconstructionVideo;
 	cv::aruco::ArucoDetector detector = createDetector();
-	cv::aruco::Board *board = createBoard();
+	cv::aruco::Board* board = createBoard();
 
 
 	if (RUN_CAMERA_CALIBRATION)
@@ -30,7 +35,8 @@ int main() {
 			cv::Mat image;
 			reconstructionVideo.retrieve(image);
 
-			Pose currentPose = estimateCameraPose(image, &detector, board, cameraMatrix, distanceCoefficients);
+			Camera frame = Camera(image, cameraMatrix);
+			Pose currentPose = frame.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
 
 			std::cout << "Camera translation vector: " << currentPose.position.x() << ", "
 				<< currentPose.position.y() << ", " << currentPose.position.z() << std::endl;
@@ -50,6 +56,25 @@ int main() {
 				}
 			}
 		}
+		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
+	}
+
+	if (RUN_VOXEL_CARVING) 
+	{
+		std::vector<Camera> cameraFrames;
+		int numFrames = reconstructionVideo.get(cv::CAP_PROP_FRAME_COUNT);
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(50, 50, 50), 1);
+
+		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
+		{
+			cv::Mat image;
+			reconstructionVideo.set(1, i * (numFrames / NUM_PROCESSED_FRAMES));
+			reconstructionVideo.retrieve(image);
+
+			cameraFrames.push_back(Camera(image, cameraMatrix));
+		}
+
+		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 	
