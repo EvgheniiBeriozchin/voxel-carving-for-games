@@ -7,7 +7,7 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "../utils/Camera.h"
+#include "../Camera.h"
 
 struct Voxel {
 	int value;

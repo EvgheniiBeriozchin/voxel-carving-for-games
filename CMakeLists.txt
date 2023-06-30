@@ -14,11 +14,14 @@ find_package(OpenCV REQUIRED)
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
 set(UTILS
-    utils/utils.cpp
+    utils/utils.h
 )
 
 set(HEADER_FILES 
     Camera.h
+    voxel/SpaceCarver.h
+    voxel/VoxelGrid.h
+    voxel/VoxelGridExporter.h
 )
 
 add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)
