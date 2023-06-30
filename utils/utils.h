@@ -32,9 +32,10 @@ cv::aruco::Board* createBoard()
 		arucoMarkers.push_back(arucoMarker);
 	}
 
+	cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_1000);
 	std::vector<int> markerIds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
 
-	return new cv::aruco::Board(arucoMarkers, cv::aruco::DICT_4X4_1000, markerIds);
+	return new cv::aruco::Board(arucoMarkers, dictionary, markerIds);
 }
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
