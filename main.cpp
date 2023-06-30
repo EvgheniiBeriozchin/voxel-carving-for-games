@@ -5,7 +5,7 @@
 #include "voxel/VoxelGridExporter.h"
 #include "voxel/SpaceCarver.h"
 #include "Camera.h"
-#include "utils/utils.cpp"
+#include "utils/utils.h"
 
 #define RUN_CAMERA_CALIBRATION 1
 #define RUN_POSE_ESTIMATION_TEST 0

@@ -164,7 +164,7 @@ private:
 		return false;
 	}
 	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras) {
-		//TODO:
+		return true;
 	}
 
 	static bool MultiSweepConsistency(VoxelGrid& voxel_grid, const std::vector<Camera> cameras) {

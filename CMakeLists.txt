@@ -14,7 +14,7 @@ find_package(OpenCV REQUIRED)
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
 set(UTILS
-    utils/utils.cpp
+    utils/utils.h
 )
 
 set(HEADER_FILES 
