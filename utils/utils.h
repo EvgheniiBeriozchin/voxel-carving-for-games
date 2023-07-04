@@ -11,6 +11,7 @@ cv::aruco::ArucoDetector createDetector()
 	return detector;
 }
 
+
 cv::aruco::Board* createBoard()
 {
 	std::vector<std::vector<cv::Point3f>> arucoMarkers;
@@ -43,9 +44,12 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 {
 	cv::Size imageSize = cv::Size(256, 256);
 	std::vector<cv::Mat> allObjectPoints, allImagePoints;
-
+	int i = -1;
 	while (video.grab())
 	{
+		i++;
+		if (i % 100 != 0)
+			continue;
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 
@@ -72,6 +76,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		localCameraMatrix, localDistortionCoefficients, rvecs, tvecs, cv::noArray(),
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
+
 
 	*cameraMatrix = localCameraMatrix;
 	*distortionCoefficients = localDistortionCoefficients;

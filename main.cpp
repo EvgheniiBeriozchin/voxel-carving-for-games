@@ -8,7 +8,7 @@
 #include "utils/utils.h"
 
 #define RUN_CAMERA_CALIBRATION 1
-#define RUN_POSE_ESTIMATION_TEST 0
+#define RUN_POSE_ESTIMATION_TEST 1
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
 
@@ -34,6 +34,7 @@ int main() {
 		calibrateCamera(calibrationVideo, &detector, board, &cameraMatrix, &distanceCoefficients);
 	}
 
+
 	if (RUN_POSE_ESTIMATION_TEST)
 	{
 		if (!videoExists(reconstructionVideo))
@@ -41,8 +42,12 @@ int main() {
 			return 0;
 		}
 
+		int i = -1;
 		while (reconstructionVideo.grab())
 		{
+			i++;
+			if (i % 50 != 0)
+				continue;
 			cv::Mat image;
 			reconstructionVideo.retrieve(image);
 
@@ -79,18 +84,39 @@ int main() {
 
 		std::vector<Camera> cameraFrames;
 		int numFrames = reconstructionVideo.get(cv::CAP_PROP_FRAME_COUNT);
-		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(50, 50, 50), 1);
 
-		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
+
+		Eigen::Vector3d boardCenter = Eigen::Vector3d(10.5, 14.25, 0.0);
+		Eigen::Vector3d gridOrigin = Eigen::Vector3d(3.5, 3.5, 0);
+		// Real dimension cm
+		double xSizeCM = 14;
+		double ySizeCM = 21.5;
+		double zSizeCM = 14;
+		// VoxelDimension
+		double voxelPerCM = 2;
+		double xSizeVX = xSizeCM * voxelPerCM;
+		double ySizeVX = ySizeCM * voxelPerCM;
+		double zSizeVX = zSizeCM * voxelPerCM;
+		double voxelSize = 1 / voxelPerCM;
+		/*auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);*/
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(2, 3, 2), 7);
+
+
+		for (int i = 0; i < numFrames; i++)
 		{
+			if (i % 20 != 0)
+				continue;
 			cv::Mat image;
-			reconstructionVideo.set(1, i * (numFrames / NUM_PROCESSED_FRAMES));
+			reconstructionVideo.set(1, numFrames);
 			reconstructionVideo.retrieve(image);
 
-			cameraFrames.push_back(Camera(image, cameraMatrix));
+			Camera cam = Camera(image, cameraMatrix);
+			cam.pose = cam.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
+			cameraFrames.push_back(cam);
 		}
-
-		SpaceCarver::MultiSweep(grid, cameraFrames);
+		std::vector<Camera> testFrames = { cameraFrames[0] };
+		cv::imwrite("test_output.jpg", testFrames[0].frame);
+		SpaceCarver::MultiSweep(grid, testFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 	

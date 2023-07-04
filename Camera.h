@@ -14,11 +14,13 @@ struct Pose {
 	Eigen::Vector3f rotation;
 };
 
-
+bool t=false;
 class Camera {
 public:
 	cv::Mat frame;
+	cv::Mat grayScaleFrame;
 	cv::Mat markingFrame;
+	Pose pose;
 	Eigen::Matrix3d instrinsicMatrix;
 
 	Camera(cv::Mat image, const cv::Mat cameraMatrix)
@@ -27,7 +29,9 @@ public:
 
 		frame = image;
 		markingFrame = cv::Mat(size, CV_8UC1);
+		grayScaleFrame = cv::Mat(size, CV_8UC1);
 		cv::cv2eigen(cameraMatrix, instrinsicMatrix);
+		prepareImage();
 	}
 
 	const Eigen::Vector2i& ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
@@ -44,7 +48,6 @@ public:
 	void MarkPixel(Eigen::Vector2i& pixel) {
 		markingFrame.at<uchar>(pixel.x(), pixel.y(), 0) = 1;
 	}
-
 	Pose estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
 	{
 		std::vector<int> markerIds;
@@ -61,5 +64,15 @@ public:
 		pose.rotation = Eigen::Vector3f(rotationVector[0], rotationVector[1], rotationVector[2]);
 
 		return pose;
+	}
+
+private:
+	
+	void prepareImage() {
+		cv::cvtColor(frame, grayScaleFrame, cv::COLOR_BGR2GRAY);
+		double maxValue = 255;
+		int blockSize = 11;    // Size of the neighborhood for thresholding (should be odd)
+		double C = 2;
+		cv::adaptiveThreshold(grayScaleFrame, grayScaleFrame, maxValue, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, C);
 	}
 };
