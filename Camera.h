@@ -44,8 +44,6 @@ public:
 
 		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
 							   screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
-
-		return Eigen::Vector2i(0, 0);
 	}
 
 	bool IsMarked(Eigen::Vector2i& pixel) {
