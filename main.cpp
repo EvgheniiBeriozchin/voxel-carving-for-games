@@ -11,6 +11,7 @@
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
+#define RUN_CAMERA_ESTIMATION_EXPORT 1
 
 
 const int NUM_PROCESSED_FRAMES = 10;
@@ -112,6 +113,62 @@ int main() {
 			std::cout << "Camera pose: " << cam.pose << std::endl;
 			cameraFrames.push_back(cam);
 		}
+
+
+
+		// Camera To markers output
+		if (RUN_CAMERA_ESTIMATION_EXPORT) {
+			int ci = 0;
+			std::vector<std::vector<Eigen::Vector3d>> points;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			std::vector<Eigen::Vector3d> colors;
+			colors.push_back(Eigen::Vector3d(0, 255, 255));
+			for (int i = 0; i < cameraFrames.size(); i++)
+			{
+				points[ci].push_back(cameraFrames[i].pose.block<3, 1>(0, 3));
+			}
+			// x axis
+			ci++;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			colors.push_back(Eigen::Vector3d(255, 0, 0));
+			for (int i = -100; i < 100; i+=2) {
+				points[ci].push_back(Eigen::Vector3d(i, 0, 0));
+			}
+			// y axis
+			ci++;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			colors.push_back(Eigen::Vector3d(0, 255, 0));
+			for (int i = -100; i < 100; i += 2) {
+				points[ci].push_back(Eigen::Vector3d(0, i, 0));
+			}
+			// z axis
+			ci++;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			colors.push_back(Eigen::Vector3d(0, 0, 255));
+			for (int i = 0; i < 100; i += 2) {
+				points[ci].push_back(Eigen::Vector3d(0, 0, i));
+			}
+			// marker setup
+			ci++;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			colors.push_back(Eigen::Vector3d(0, 0, 0));
+			points[ci].push_back(boardCenter);
+			for (int i = 0; i < boardCenter.x() * 2; i++) {
+				points[ci].push_back(Eigen::Vector3d(i, 0, 0));
+				points[ci].push_back(Eigen::Vector3d(i, boardCenter.y() * 2, 0));
+			}
+			for (int i = 0; i < boardCenter.y() * 2; i++) {
+				points[ci].push_back(Eigen::Vector3d(0, i, 0));
+				points[ci].push_back(Eigen::Vector3d(boardCenter.x() * 2, i, 0));
+			}
+
+			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
+			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
+
+		}
+
+
+
 		std::vector<Camera> testFrames = { cameraFrames[0] };
 		cv::imwrite("test_output.jpg", testFrames[0].frame);
 		

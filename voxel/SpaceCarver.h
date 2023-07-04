@@ -158,7 +158,7 @@ private:
 		for each (Camera camera in cameras)
 		{
 			auto pixelPos = camera.ProjectIntoCameraSpace(voxel_world_pos);
-			if (pixelPos.x() >= camera.frame.rows || pixelPos.y() >= camera.frame.cols)
+			if (pixelPos.x() >= camera.frame.rows || pixelPos.y() >= camera.frame.cols || pixelPos.x() < 0 || pixelPos.y() < 0)
 				continue;
 			if (IsCameraAbovePlane(camera, voxel_world_pos, planeNormal))
 				cams.push_back(camera);
