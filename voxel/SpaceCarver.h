@@ -154,7 +154,7 @@ private:
 		std::vector<Camera> cams;
 		for each (Camera camera in cameras)
 		{
-			auto pixelPos = camera.ProjectIntoCameraSpace(voxel_world_pos)/100;
+			auto pixelPos = camera.ProjectIntoCameraSpace(voxel_world_pos);
 			if (pixelPos.x() >= camera.frame.rows || pixelPos.y() >= camera.frame.cols)
 				continue;
 			if (IsCameraAbovePlane(camera, voxel_world_pos, planeNormal))
