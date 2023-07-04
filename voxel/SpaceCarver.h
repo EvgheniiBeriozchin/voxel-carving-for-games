@@ -165,14 +165,14 @@ private:
 	static bool IsCameraAbovePlane(const Camera& camera, const Eigen::Vector3d& planePoint, const Eigen::Vector3d& planeNormal) {
 		// for better result use clipping in pyramidal beam instead of plane
 		// TODO:
-		Eigen::Vector3d cp = camera.pose.position.cast<double>();
-		Eigen::Vector3d cr = camera.pose.rotation.cast<double>();
+		//Eigen::Vector3d cp = camera.pose.position.cast<double>();
+		//Eigen::Vector3d cr = camera.pose.rotation.cast<double>();
 
-		bool distance = (planePoint - cp).normalized().dot(planeNormal) > 0;
-		bool direction = cr.dot(planeNormal) > 0;
+		//bool distance = (planePoint - cp).normalized().dot(planeNormal) > 0;
+		//bool direction = cr.dot(planeNormal) > 0;
 		//// return distance > 0.0;
-		return distance && direction;
-		//return true;
+		//return distance && direction;
+		return true;
 	}
 	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras) {
 		bool consistent = true;

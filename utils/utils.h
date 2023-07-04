@@ -39,21 +39,29 @@ cv::aruco::Board* createBoard()
 	return new cv::aruco::Board(arucoMarkers, dictionary, markerIds);
 }
 
+
+const int NUM_CALIBRATION_FRAMES = 20;
+
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
 {
+	std::cout << "Calibrating camera" << std::endl;
 	cv::Size imageSize = cv::Size(256, 256);
 	std::vector<cv::Mat> allObjectPoints, allImagePoints;
-	int i = -1;
-	while (video.grab())
+	int numFrames = video.get(cv::CAP_PROP_FRAME_COUNT);
+
+	for (int i = 0; i < NUM_CALIBRATION_FRAMES; i++)
 	{
-		i++;
-		if (i % 100 != 0)
-			continue;
+		if ((i + 1) % 10 == 0)
+		{
+			std::cout << "Processed " << (i + 1) << " frames" << std::endl;
+		}
+
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 
 		cv::Mat image, currentObjectPoints, currentImagePoints;
+		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
 		video.retrieve(image);
 
 		detector->detectMarkers(image, markerCorners, markerIds, rejectedCandidates);

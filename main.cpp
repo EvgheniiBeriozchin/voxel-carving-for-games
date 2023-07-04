@@ -8,12 +8,12 @@
 #include "utils/utils.h"
 
 #define RUN_CAMERA_CALIBRATION 1
-#define RUN_POSE_ESTIMATION_TEST 1
+#define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
 
 
-const int NUM_PROCESSED_FRAMES = 1000;
+const int NUM_PROCESSED_FRAMES = 20;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -42,22 +42,17 @@ int main() {
 			return 0;
 		}
 
-		int i = -1;
-		while (reconstructionVideo.grab())
+		int numFrames = reconstructionVideo.get(cv::CAP_PROP_FRAME_COUNT);
+		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
 		{
-			i++;
-			if (i % 50 != 0)
-				continue;
+			reconstructionVideo.set(1, i * (numFrames / NUM_PROCESSED_FRAMES));
 			cv::Mat image;
 			reconstructionVideo.retrieve(image);
 
 			Camera frame = Camera(image, cameraMatrix);
-			Pose currentPose = frame.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
+			Eigen::Matrix4d currentPose = frame.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
 
-			std::cout << "Camera translation vector: " << currentPose.position.x() << ", "
-				<< currentPose.position.y() << ", " << currentPose.position.z() << std::endl;
-			std::cout << "Camera rotation vector: " << currentPose.rotation.x() << ", "
-				<< currentPose.rotation.y() << ", " << currentPose.rotation.z() << std::endl;
+			std::cout << "Camera pose: " << currentPose << std::endl;
 		}
 	}
 
@@ -98,16 +93,18 @@ int main() {
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
 		double voxelSize = 1 / voxelPerCM;
-		/*auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);*/
-		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(2, 3, 2), 7);
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
+		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(20, 30, 20), 1);
 
-
-		for (int i = 0; i < numFrames; i++)
+		std::cout << "Preparing frames for voxel carving" << std::endl;
+		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
 		{
-			if (i % 20 != 0)
-				continue;
+			if ((i + 1) % 10 == 0)
+			{
+				std::cout << "Processed " << (i + 1) << " frames" << std::endl;
+			}
 			cv::Mat image;
-			reconstructionVideo.set(1, numFrames);
+			reconstructionVideo.set(1, i * (numFrames / NUM_PROCESSED_FRAMES));
 			reconstructionVideo.retrieve(image);
 
 			Camera cam = Camera(image, cameraMatrix);
@@ -116,6 +113,8 @@ int main() {
 		}
 		std::vector<Camera> testFrames = { cameraFrames[0] };
 		cv::imwrite("test_output.jpg", testFrames[0].frame);
+		
+		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, testFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}

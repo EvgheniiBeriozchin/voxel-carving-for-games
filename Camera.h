@@ -20,7 +20,7 @@ public:
 	cv::Mat frame;
 	cv::Mat grayScaleFrame;
 	cv::Mat markingFrame;
-	Pose pose;
+	Eigen::Matrix4d pose;
 	Eigen::Matrix3d instrinsicMatrix;
 
 	Camera(cv::Mat image, const cv::Mat cameraMatrix)
@@ -31,14 +31,21 @@ public:
 		markingFrame = cv::Mat(size, CV_8UC1);
 		grayScaleFrame = cv::Mat(size, CV_8UC1);
 		cv::cv2eigen(cameraMatrix, instrinsicMatrix);
+
 		prepareImage();
 	}
 
 	const Eigen::Vector2i& ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
-		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * worldPoint;
+		Eigen::Matrix4d extrinsicMatrix = pose.inverse();
+		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
+		Eigen::Matrix4d instrinsicMatrix4 = Eigen::Matrix4d::Identity();
+		instrinsicMatrix4.block(0, 0, 3, 3) = instrinsicMatrix;
+		Eigen::Vector4d screenSpaceIntermediate = instrinsicMatrix4 * extrinsicMatrix * worldPoint4;
 
 		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
 							   screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
+
+		return Eigen::Vector2i(0, 0);
 	}
 
 	bool IsMarked(Eigen::Vector2i& pixel) {
@@ -48,7 +55,7 @@ public:
 	void MarkPixel(Eigen::Vector2i& pixel) {
 		markingFrame.at<uchar>(pixel.x(), pixel.y(), 0) = 1;
 	}
-	Pose estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
+	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
 	{
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
@@ -59,9 +66,27 @@ public:
 		board->matchImagePoints(markerCorners, markerIds, objectPoints, imagePoints);
 		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distanceCoefficients, rotationVector, translationVector);
 
-		Pose pose;
-		pose.position = Eigen::Vector3f(translationVector[0], translationVector[1], translationVector[2]);
-		pose.rotation = Eigen::Vector3f(rotationVector[0], rotationVector[1], rotationVector[2]);
+		Eigen::Vector3d position = Eigen::Vector3d(translationVector[0], translationVector[1], translationVector[2]);
+		Eigen::Matrix4d rollMatrix{
+										{cos(rotationVector[0]), sin(rotationVector[0]), 0, 0},
+										{-sin(rotationVector[0]), cos(rotationVector[0]), 0, 0},
+										{0, 0, 1, 0},
+										{0, 0, 0, 1}
+		};
+		Eigen::Matrix4d pitchMatrix{
+										{1, 0, 0, 0},
+										{0, cos(rotationVector[1]), sin(rotationVector[1]), 0},
+										{0, -sin(rotationVector[1]), cos(rotationVector[1]), 0},
+										{0, 0, 0, 1}
+		};
+		Eigen::Matrix4d yawMatrix{
+										{cos(rotationVector[2]), 0, -sin(rotationVector[2]), 0},
+										{0, 1, 0, 0},
+										{sin(rotationVector[2]), 0, cos(rotationVector[2]), 0},
+										{0, 0, 0, 1}
+		};
+		Eigen::Matrix4d pose = pitchMatrix * yawMatrix * rollMatrix;
+		pose.block(0, 3, 3, 1) = position;
 
 		return pose;
 	}
