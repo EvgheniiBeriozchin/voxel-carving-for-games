@@ -105,6 +105,7 @@ private:
 						continue;
 					for (int i = 0; i < voxelCameras.size(); i++) {// Select cameras and pixel positions where pixel is unmarked
 						Eigen::Vector2i pixelPos = voxelCameras[i].ProjectIntoCameraSpace(voxel_world_pos);
+						std::cout << pixelPos << std::endl;
 						if (!voxelCameras[i].IsMarked(pixelPos)) {
 							unmarkedPixelCameras.push_back(cameras[i]);
 							pixelsPositions.push_back(pixelPos);

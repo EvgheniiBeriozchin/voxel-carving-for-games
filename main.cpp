@@ -115,7 +115,7 @@ int main() {
 		cv::imwrite("test_output.jpg", testFrames[0].frame);
 		
 		std::cout << "Running voxel carving" << std::endl;
-		SpaceCarver::MultiSweep(grid, testFrames);
+		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 	
