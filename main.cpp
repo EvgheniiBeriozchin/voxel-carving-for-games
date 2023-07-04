@@ -13,7 +13,7 @@
 #define RUN_VOXEL_CARVING 1
 
 
-const int NUM_PROCESSED_FRAMES = 20;
+const int NUM_PROCESSED_FRAMES = 10;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -109,6 +109,7 @@ int main() {
 
 			Camera cam = Camera(image, cameraMatrix);
 			cam.pose = cam.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
+			std::cout << "Camera pose: " << cam.pose << std::endl;
 			cameraFrames.push_back(cam);
 		}
 		std::vector<Camera> testFrames = { cameraFrames[0] };

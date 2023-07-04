@@ -26,6 +26,7 @@ public:
 	Camera(cv::Mat image, const cv::Mat cameraMatrix)
 	{
 		cv::Size size = image.size();
+		std::cout << "image size: " << size << std::endl;
 
 		frame = image;
 		markingFrame = cv::Mat(size, CV_8UC1);
@@ -39,19 +40,18 @@ public:
 		Eigen::Matrix4d extrinsicMatrix = pose.inverse();
 		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
 		Eigen::Matrix<double, 3, 4> reshapingMatrix = Eigen::Matrix<double, 3, 4>::Identity();
-		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * extrinsicMatrix * worldPoint4;
+		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose * worldPoint4;
 
-		std::cout << "Screen space Intermediate: " << screenSpaceIntermediate << std::endl;
 		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
 							   screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
 	}
 
 	bool IsMarked(Eigen::Vector2i& pixel) {
-		return markingFrame.at<uchar>(pixel.x(), pixel.y(), 0);
+		return markingFrame.at<uchar>(pixel.x(), pixel.y());
 	}
 
 	void MarkPixel(Eigen::Vector2i& pixel) {
-		markingFrame.at<uchar>(pixel.x(), pixel.y(), 0) = 1;
+		markingFrame.at<uchar>(pixel.x(), pixel.y()) = 1;
 	}
 	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
 	{
