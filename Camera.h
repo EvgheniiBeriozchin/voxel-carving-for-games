@@ -9,11 +9,6 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/eigen.hpp>
 
-struct Pose {
-	Eigen::Vector3f position;
-	Eigen::Vector3f rotation;
-};
-
 bool t=false;
 class Camera {
 public:
@@ -26,13 +21,12 @@ public:
 	Camera(cv::Mat image, const cv::Mat cameraMatrix)
 	{
 		cv::Size size = image.size();
-		std::cout << "image size: " << size << std::endl;
 
 		frame = image;
 		markingFrame = cv::Mat(size, CV_8UC1);
 		grayScaleFrame = cv::Mat(size, CV_8UC1);
 		cv::cv2eigen(cameraMatrix, instrinsicMatrix);
-
+		
 		prepareImage();
 	}
 
@@ -52,6 +46,7 @@ public:
 	void MarkPixel(Eigen::Vector2i& pixel) {
 		markingFrame.at<uchar>(pixel.x(), pixel.y()) = 1;
 	}
+
 	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
 	{
 		std::vector<int> markerIds;
@@ -60,6 +55,7 @@ public:
 		cv::Vec3d rotationVector, translationVector;
 
 		detector->detectMarkers(frame, markerCorners, markerIds, rejectedCandidates);
+		detector->refineDetectedMarkers(frame, *board, markerCorners, markerIds, rejectedCandidates);
 		board->matchImagePoints(markerCorners, markerIds, objectPoints, imagePoints);
 		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distanceCoefficients, rotationVector, translationVector);
 

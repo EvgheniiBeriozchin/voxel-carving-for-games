@@ -15,21 +15,21 @@ cv::aruco::ArucoDetector createDetector()
 cv::aruco::Board* createBoard()
 {
 	std::vector<std::vector<cv::Point3f>> arucoMarkers;
-	std::vector<cv::Point3f> topLeftCorners = {cv::Point3f(0.5, 0.5, 0.0), cv::Point3f(4.0, 0.5, 0.0), cv::Point3f(9.0, 0.5, 0.0), 
-											   cv::Point3f(14.0, 0.5, 0.0), cv::Point3f(17.5, 0.5, 0.0), cv::Point3f(17.5, 4.0, 0.0),
-											   cv::Point3f(17.5, 7.5, 0.0), cv::Point3f(17.5, 11.0, 0.0), cv::Point3f(17.5, 14.5, 0.0),
-											   cv::Point3f(17.5, 18.0, 0.0), cv::Point3f(17.5, 21.5, 0.0), cv::Point3f(17.5, 25.0, 0.0),
-											   cv::Point3f(14.0, 25.0, 0.0), cv::Point3f(9.0, 25.0, 0.0), cv::Point3f(4.0, 25.0, 0.0),
-											   cv::Point3f(0.5, 25.0, 0.0), cv::Point3f(0.5, 21.5, 0.0), cv::Point3f(0.5, 18.0, 0.0),
-											   cv::Point3f(0.5, 14.5, 0.0), cv::Point3f(0.5, 11.0, 0.0), cv::Point3f(0.5, 7.5, 0.0),
-											   cv::Point3f(0.5, 4.0, 0.0)};
+	std::vector<cv::Point3f> topLeftCorners = {0.01 * cv::Point3f(0.5, 0.5, 0.0), 0.01 * cv::Point3f(4.0, 0.5, 0.0), 0.01 * cv::Point3f(9.0, 0.5, 0.0),
+											   0.01 * cv::Point3f(14.0, 0.5, 0.0), 0.01 * cv::Point3f(17.5, 0.5, 0.0), 0.01 * cv::Point3f(17.5, 4.0, 0.0),
+											   0.01 * cv::Point3f(17.5, 7.5, 0.0), 0.01 * cv::Point3f(17.5, 11.0, 0.0), 0.01 * cv::Point3f(17.5, 14.5, 0.0),
+											   0.01 * cv::Point3f(17.5, 18.0, 0.0), 0.01 * cv::Point3f(17.5, 21.5, 0.0), 0.01 * cv::Point3f(17.5, 25.0, 0.0),
+											   0.01 * cv::Point3f(14.0, 25.0, 0.0), 0.01 * cv::Point3f(9.0, 25.0, 0.0), 0.01 * cv::Point3f(4.0, 25.0, 0.0),
+											   0.01 * cv::Point3f(0.5, 25.0, 0.0), 0.01 * cv::Point3f(0.5, 21.5, 0.0), 0.01 * cv::Point3f(0.5, 18.0, 0.0),
+											   0.01 * cv::Point3f(0.5, 14.5, 0.0), 0.01 * cv::Point3f(0.5, 11.0, 0.0), 0.01 * cv::Point3f(0.5, 7.5, 0.0),
+											   0.01 * cv::Point3f(0.5, 4.0, 0.0)};
 
 	for (cv::Point3f topLeftCorner : topLeftCorners)
 	{
 		std::vector<cv::Point3f> arucoMarker = { topLeftCorner, 
-												 topLeftCorner + cv::Point3f(3.0, 0.0, 0.0), 
-												 topLeftCorner + cv::Point3f(0.0, 3.0, 0.0), 
-												 topLeftCorner + cv::Point3f(3.0, 3.0, 0.0), };
+												 topLeftCorner + 0.01 * cv::Point3f(3.0, 0.0, 0.0),
+												 topLeftCorner + 0.01 * cv::Point3f(0.0, 3.0, 0.0),
+												 topLeftCorner + 0.01 * cv::Point3f(3.0, 3.0, 0.0), };
 		arucoMarkers.push_back(arucoMarker);
 	}
 
@@ -40,13 +40,13 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 20;
+const int NUM_CALIBRATION_FRAMES = 50;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
 {
 	std::cout << "Calibrating camera" << std::endl;
-	cv::Size imageSize = cv::Size(256, 256);
+	cv::Size imageSize = cv::Size(1080, 1920);
 	std::vector<cv::Mat> allObjectPoints, allImagePoints;
 	int numFrames = video.get(cv::CAP_PROP_FRAME_COUNT);
 
@@ -63,8 +63,10 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::Mat image, currentObjectPoints, currentImagePoints;
 		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
 		video.retrieve(image);
+		imageSize = image.size();
 
 		detector->detectMarkers(image, markerCorners, markerIds, rejectedCandidates);
+		detector->refineDetectedMarkers(image, *board, markerCorners, markerIds, rejectedCandidates);
 		board->matchImagePoints(
 			markerCorners, markerIds,
 			currentObjectPoints, currentImagePoints
@@ -85,6 +87,20 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
 
+	/*
+	float cm_f[9] = { 1856.296491838788, 0, 519.8483668408671,
+										0, 1858.04034342115, 955.0267490933753,
+										0, 0, 1 };
+	cv::Mat cm = cv::Mat(3, 3, CV_32F, cm_f);
+
+	float dc_f[5] = { -0.0641685889523109, 1.33098094466823, -0.003969580929144683, -0.0007438596026286802, -3.428214031198218 };
+	cv::Mat dc = cv::Mat(1, 5, CV_32F, cm_f);
+
+	std::cout << cm << std::endl;
+	std::cout << dc << std::endl;
+	*/
+	std::cout << "Camera matrix: " << localCameraMatrix << std::endl;
+	std::cout << "Distortion Coefficients: " << localDistortionCoefficients << std::endl;
 
 	*cameraMatrix = localCameraMatrix;
 	*distortionCoefficients = localDistortionCoefficients;

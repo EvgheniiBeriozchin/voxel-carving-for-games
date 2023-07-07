@@ -14,7 +14,7 @@
 #define RUN_CAMERA_ESTIMATION_EXPORT 1
 
 
-const int NUM_PROCESSED_FRAMES = 10;
+const int NUM_PROCESSED_FRAMES = 40;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -82,8 +82,8 @@ int main() {
 		int numFrames = reconstructionVideo.get(cv::CAP_PROP_FRAME_COUNT);
 
 
-		Eigen::Vector3d boardCenter = Eigen::Vector3d(10.5, 14.25, 0.0);
-		Eigen::Vector3d gridOrigin = Eigen::Vector3d(3.5, 3.5, 0);
+		Eigen::Vector3d boardCenter = 0.01 * Eigen::Vector3d(10.5, 14.25, 0.0);
+		Eigen::Vector3d gridOrigin = 0.01 * Eigen::Vector3d(3.5, 3.5, 0);
 		// Real dimension cm
 		double xSizeCM = 14;
 		double ySizeCM = 21.5;
@@ -110,7 +110,6 @@ int main() {
 
 			Camera cam = Camera(image, cameraMatrix);
 			cam.pose = cam.estimateCameraPose(&detector, board, cameraMatrix, distanceCoefficients);
-			std::cout << "Camera pose: " << cam.pose << std::endl;
 			cameraFrames.push_back(cam);
 		}
 
@@ -132,21 +131,21 @@ int main() {
 			points.push_back(std::vector<Eigen::Vector3d>());
 			colors.push_back(Eigen::Vector3d(255, 0, 0));
 			for (int i = -100; i < 100; i+=2) {
-				points[ci].push_back(Eigen::Vector3d(i, 0, 0));
+				points[ci].push_back(0.01 * Eigen::Vector3d(i, 0, 0));
 			}
 			// y axis
 			ci++;
 			points.push_back(std::vector<Eigen::Vector3d>());
 			colors.push_back(Eigen::Vector3d(0, 255, 0));
 			for (int i = -100; i < 100; i += 2) {
-				points[ci].push_back(Eigen::Vector3d(0, i, 0));
+				points[ci].push_back(0.01 * Eigen::Vector3d(0, i, 0));
 			}
 			// z axis
 			ci++;
 			points.push_back(std::vector<Eigen::Vector3d>());
 			colors.push_back(Eigen::Vector3d(0, 0, 255));
 			for (int i = 0; i < 100; i += 2) {
-				points[ci].push_back(Eigen::Vector3d(0, 0, i));
+				points[ci].push_back(0.01 * Eigen::Vector3d(0, 0, i));
 			}
 			// marker setup
 			ci++;
@@ -154,24 +153,23 @@ int main() {
 			colors.push_back(Eigen::Vector3d(0, 0, 0));
 			points[ci].push_back(boardCenter);
 			for (int i = 0; i < boardCenter.x() * 2; i++) {
-				points[ci].push_back(Eigen::Vector3d(i, 0, 0));
-				points[ci].push_back(Eigen::Vector3d(i, boardCenter.y() * 2, 0));
+				points[ci].push_back(0.01 * Eigen::Vector3d(i, 0, 0));
+				points[ci].push_back(Eigen::Vector3d(0.01 * i, boardCenter.y() * 2, 0));
 			}
 			for (int i = 0; i < boardCenter.y() * 2; i++) {
-				points[ci].push_back(Eigen::Vector3d(0, i, 0));
-				points[ci].push_back(Eigen::Vector3d(boardCenter.x() * 2, i, 0));
+				points[ci].push_back(0.01 * Eigen::Vector3d(0, i, 0));
+				points[ci].push_back(Eigen::Vector3d(boardCenter.x() * 2, 0.01 * i, 0));
 			}
+
+			cv::Point3d rightBottomBoardCorner = board->getRightBottomCorner();
+			colors.push_back(Eigen::Vector3d(150, 150, 0));
+			points[ci].push_back(Eigen::Vector3d(rightBottomBoardCorner.x,
+				rightBottomBoardCorner.y, rightBottomBoardCorner.z));
 
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
 			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
-
 		}
 
-
-
-		std::vector<Camera> testFrames = { cameraFrames[0] };
-		cv::imwrite("test_output.jpg", testFrames[0].frame);
-		
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
