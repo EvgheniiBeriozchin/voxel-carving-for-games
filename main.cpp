@@ -14,22 +14,33 @@
 
 
 const int NUM_PROCESSED_FRAMES = 1000;
+const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
+const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
-	cv::VideoCapture calibrationVideo, reconstructionVideo;
+	cv::VideoCapture calibrationVideo(CALIBRATION_VIDEO_NAME), reconstructionVideo(RECONSTRUCTION_VIDEO_NAME);
 	cv::aruco::ArucoDetector detector = createDetector();
 	cv::aruco::Board* board = createBoard();
 
-
 	if (RUN_CAMERA_CALIBRATION)
 	{
+		if (!videoExists(calibrationVideo))
+		{
+			return 0;
+		}
+
 		calibrateCamera(calibrationVideo, &detector, board, &cameraMatrix, &distanceCoefficients);
 	}
 
 	if (RUN_POSE_ESTIMATION_TEST)
 	{
+		if (!videoExists(reconstructionVideo))
+		{
+			return 0;
+		}
+
 		while (reconstructionVideo.grab())
 		{
 			cv::Mat image;
@@ -61,6 +72,11 @@ int main() {
 
 	if (RUN_VOXEL_CARVING) 
 	{
+		if (!videoExists(reconstructionVideo))
+		{
+			return 0;
+		}
+
 		std::vector<Camera> cameraFrames;
 		int numFrames = reconstructionVideo.get(cv::CAP_PROP_FRAME_COUNT);
 		auto grid = VoxelGrid::CreateFilledVoxelGrid(Eigen::Vector3d(0, 0, 0), Eigen::Vector3i(50, 50, 50), 1);
