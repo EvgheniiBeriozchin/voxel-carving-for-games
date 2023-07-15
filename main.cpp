@@ -14,7 +14,7 @@
 #define RUN_CAMERA_ESTIMATION_EXPORT 1
 
 
-const int NUM_PROCESSED_FRAMES = 1;
+const int NUM_PROCESSED_FRAMES = 40;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -95,8 +95,8 @@ int main() {
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
 		double voxelSize = 0.01 * 1 / voxelPerCM;
-		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
-		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(3, 3, 5), 0.05);
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
+		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(3, 3, 5), 0.05);
 
 		std::cout << "Preparing frames for voxel carving" << std::endl;
 		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
@@ -184,6 +184,16 @@ int main() {
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
 			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
 		}
+		int count = 0;
+		for (int i = 0; i < cameraFrames.size(); i++)
+		{
+			Eigen::Vector2i projection = cameraFrames[i].ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
+			if (projection.x() >= 0 && projection.x() < cameraFrames[i].frame.size().width
+				&& projection.y() >= 0 && projection.y() < cameraFrames[i].frame.size().height)
+				count++;
+		}
+		std::cout << "Center points within frame: " << count << std::endl;
+
 		// write image with projected grid positions
 		cv::Mat tf;
 		cameraFrames[0].frame.copyTo(tf);
@@ -197,7 +207,7 @@ int main() {
 		cv::imwrite("camera_0_gray.png", tf);
 		//
 		std::cout << "Running voxel carving" << std::endl;
-		SpaceCarver::MultiSweep(grid, cameraFrames);
+		//SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 	

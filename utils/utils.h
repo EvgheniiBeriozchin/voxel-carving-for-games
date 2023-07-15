@@ -40,7 +40,7 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 20;
+const int NUM_CALIBRATION_FRAMES = 1;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
@@ -87,10 +87,10 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
 
-	/*
+	
 	float cm_f[9] = { 1856.296491838788, 0, 519.8483668408671,
-										0, 1858.04034342115, 955.0267490933753,
-										0, 0, 1 };
+					  0, 1858.04034342115, 955.0267490933753,
+					  0, 0, 1 };
 	cv::Mat cm = cv::Mat(3, 3, CV_32F, cm_f);
 
 	float dc_f[5] = { -0.0641685889523109, 1.33098094466823, -0.003969580929144683, -0.0007438596026286802, -3.428214031198218 };
@@ -104,7 +104,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 	localCameraMatrix = cm;
 	localDistortionCoefficients = dc;
-	*/
+	
 
 	*cameraMatrix = localCameraMatrix;
 	*distortionCoefficients = localDistortionCoefficients;
