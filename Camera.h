@@ -24,10 +24,10 @@ public:
 		cv::Size size = image.size();
 
 		frame = image;
-		markingFrame = cv::Mat(size, CV_8UC1);
+		markingFrame = cv::Mat(size, CV_8U, cv::Scalar(0));
 		grayScaleFrame = cv::Mat(size, CV_8UC1);
 		cv::cv2eigen(cameraMatrix, instrinsicMatrix);
-		
+
 		prepareImage();
 	}
 
@@ -37,15 +37,27 @@ public:
 		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose * worldPoint4;
 
 		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
-							   screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
+			screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
 	}
 
+	//const Eigen::Vector2i ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
+	//	Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
+	//	// Convert world point to homogeneous coordinates
+	//	cv::Mat worldCoordinateHomogeneous(4, 1, CV_64F);
+	//	cv::eigen2cv(worldPoint4, worldCoordinateHomogeneous);
+	//	cv::Mat cameraCoordinateHomogeneous = cameraTransform * worldCoordinateHomogeneous;
+	//	cv::Mat projectedPoint = cameraMatrix * cameraCoordinateHomogeneous(cv::Rect(0, 0, 1, 3));
+	//	float xNormalized = projectedPoint.at<double>(0) / projectedPoint.at<double>(2);
+	//	float yNormalized = projectedPoint.at<double>(1) / projectedPoint.at<double>(2);
+	//	return Eigen::Vector2i(xNormalized, yNormalized);
+	//}
+
 	bool IsMarked(Eigen::Vector2i& pixel) {
-		return markingFrame.at<uchar>(pixel.x(), pixel.y());
+		return markingFrame.at<uchar>(pixel.y(), pixel.x()) == 255;
 	}
 
 	void MarkPixel(Eigen::Vector2i& pixel) {
-		markingFrame.at<uchar>(pixel.x(), pixel.y()) = 1;
+		markingFrame.at<uchar>(pixel.y(), pixel.x()) = 255;
 	}
 
 	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distortionCoefficients)
@@ -86,6 +98,6 @@ private:
 		double maxValue = 255;
 		int blockSize = 11;    // Size of the neighborhood for thresholding (should be odd)
 		double C = 2;
-		cv::adaptiveThreshold(grayScaleFrame, grayScaleFrame, maxValue, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, C);
+		//cv::adaptiveThreshold(grayScaleFrame, grayScaleFrame, maxValue, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, C);
 	}
 };

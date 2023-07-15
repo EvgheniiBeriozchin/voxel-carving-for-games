@@ -76,13 +76,20 @@ public:
 			bool change = false;
 			// Step 2
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
+			std::cout << "Carved XPos direction" << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
+			std::cout << "Carved XNeg direction" << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
+			std::cout << "Carved YPos direction" << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
+			std::cout << "Carved YNeg direction" << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
+			std::cout << "Carved ZPos direction" << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
+			std::cout << "Carved ZNeg direction" << std::endl;
 			// Step 3
 			change |= MultiSweepConsistency(voxel_grid, cameras);
+			std::cout << "Sweep complete! - Did something get carved? " << change << std::endl;
 			terminate = !change;
 		}
 	}
@@ -97,6 +104,8 @@ private:
 					if (!IsSurfaceVoxel(voxel_grid, voxel_grid_pos))// Skip voxels that are the interior of the object (no need to check them TODO: validate if thats correct)
 						continue;
 					Voxel& voxel = voxel_grid.GetVoxel(voxel_grid_pos);
+					if (voxel.value == 0)
+						continue;
 					Eigen::Vector3d voxel_world_pos = voxel_grid.GetVoxelCenter(voxel_grid_pos);
 					std::vector<Camera> voxelCameras = GetCamerasForPlaneVoxel(voxel_world_pos, planeNormal, cameras);// Get cameras above plane
 					std::vector<Eigen::Vector2i> pixelsPositions;
@@ -105,11 +114,11 @@ private:
 						continue;
 					for (int i = 0; i < voxelCameras.size(); i++) {// Select cameras and pixel positions where pixel is unmarked
 						Eigen::Vector2i pixelPos = voxelCameras[i].ProjectIntoCameraSpace(voxel_world_pos);
-						if (pixelPos.x() < 0 || pixelPos.y() < 0 || pixelPos.x() >= voxelCameras[i].frame.rows || pixelPos.y() >= voxelCameras[i].frame.cols)
-							continue;
+						/*if (pixelPos.x() < 0 || pixelPos.y() < 0 || pixelPos.x() >= voxelCameras[i].frame.rows || pixelPos.y() >= voxelCameras[i].frame.cols)
+							continue;*/
 
 						if (!voxelCameras[i].IsMarked(pixelPos)) {
-							unmarkedPixelCameras.push_back(cameras[i]);
+							unmarkedPixelCameras.push_back(voxelCameras[i]);
 							pixelsPositions.push_back(pixelPos);
 						}
 					}
@@ -158,7 +167,7 @@ private:
 		for each (Camera camera in cameras)
 		{
 			auto pixelPos = camera.ProjectIntoCameraSpace(voxel_world_pos);
-			if (pixelPos.x() >= camera.frame.rows || pixelPos.y() >= camera.frame.cols || pixelPos.x() < 0 || pixelPos.y() < 0)
+			if (pixelPos.x() >= camera.frame.cols || pixelPos.y() >= camera.frame.rows || pixelPos.x() < 0 || pixelPos.y() < 0)
 				continue;
 			if (IsCameraAbovePlane(camera, voxel_world_pos, planeNormal))
 				cams.push_back(camera);
@@ -178,12 +187,12 @@ private:
 		return true;
 	}
 	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras) {
-		bool consistent = true;
+		bool consistent = false;
 		for (int i = 0; i < pixelsPositions.size(); i++) {
 			Camera c = PixelCameras[i];
-			uchar col = c.grayScaleFrame.at<uchar>(pixelsPositions[i].x(), pixelsPositions[i].y());
-			if (col >= 10) {
-				consistent &= false;
+			uchar col = c.grayScaleFrame.at<uchar>(pixelsPositions[i].y(), pixelsPositions[i].x());
+			if (col <= 100) {
+				return true;
 			}
 		}
 		return consistent;
@@ -199,6 +208,7 @@ private:
 			for (int c = 0; c < voxel.cameras.size(); c++) {
 				Eigen::Vector2i pixelPos = voxel.cameras[c].ProjectIntoCameraSpace(voxel_world_pos);
 				pixelsPositions.push_back(pixelPos);
+
 			}
 			if (!CheckPhotoConsistency(voxel_world_pos, pixelsPositions, voxel.cameras)) {// Step 3b
 				voxel_grid.RemoveVoxel(setVoxelPositions[i]);
