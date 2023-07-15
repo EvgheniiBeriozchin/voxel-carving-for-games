@@ -87,7 +87,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
 
-	
+	/*
 	float cm_f[9] = { 1856.296491838788, 0, 519.8483668408671,
 					  0, 1858.04034342115, 955.0267490933753,
 					  0, 0, 1 };
@@ -104,7 +104,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 	localCameraMatrix = cm;
 	localDistortionCoefficients = dc;
-	
+	*/
 
 	*cameraMatrix = localCameraMatrix;
 	*distortionCoefficients = localDistortionCoefficients;

@@ -190,7 +190,10 @@ int main() {
 			Eigen::Vector2i projection = cameraFrames[i].ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
 			if (projection.x() >= 0 && projection.x() < cameraFrames[i].frame.size().width
 				&& projection.y() >= 0 && projection.y() < cameraFrames[i].frame.size().height)
+			{ 
 				count++;
+				std::cout << "World center location: " << projection << std::endl;
+			}
 		}
 		std::cout << "Center points within frame: " << count << std::endl;
 
