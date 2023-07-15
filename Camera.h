@@ -31,10 +31,10 @@ public:
 		prepareImage();
 	}
 
-	const Eigen::Vector2i ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
+	Eigen::Vector2i ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
 		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
 		Eigen::Matrix<double, 3, 4> reshapingMatrix = Eigen::Matrix<double, 3, 4>::Identity();
-		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose * worldPoint4;
+		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose.inverse() * worldPoint4;
 
 		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
 			screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
@@ -72,8 +72,7 @@ public:
 		board->matchImagePoints(markerCorners, markerIds, objectPoints, imagePoints);
 		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
 		cv::solvePnPRefineLM(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
-		
-		
+			
 		this->objectPoints = objectPoints;
 		
 		Eigen::Vector3d position = Eigen::Vector3d(translationVector[0], translationVector[1], translationVector[2]);
