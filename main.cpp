@@ -89,7 +89,7 @@ int main() {
 		double ySizeCM = 21.5;
 		double zSizeCM = 14;
 		// VoxelDimension
-		double voxelPerCM = 2;
+		double voxelPerCM = 10;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
@@ -160,11 +160,24 @@ int main() {
 				points[ci].push_back(0.01 * Eigen::Vector3d(0, i, 0));
 				points[ci].push_back(Eigen::Vector3d(boardCenter.x() * 2, 0.01 * i, 0));
 			}
+			ci++;
+			points.push_back(std::vector<Eigen::Vector3d>());
+			colors.push_back(Eigen::Vector3d(255, 255, 255));
+			for (int i = 0; i < cameraFrames.size(); i++)
+			{
+				for (int j = 0; j < cameraFrames[i].objectPoints.size(); j++) {
+					points[ci].push_back(Eigen::Vector3d(
+						cameraFrames[i].objectPoints[j].x,
+						cameraFrames[i].objectPoints[j].y,
+						cameraFrames[i].objectPoints[j].z
+					));
+				}
+			}
 
-			cv::Point3d rightBottomBoardCorner = board->getRightBottomCorner();
-			colors.push_back(Eigen::Vector3d(150, 150, 0));
-			points[ci].push_back(Eigen::Vector3d(rightBottomBoardCorner.x,
-				rightBottomBoardCorner.y, rightBottomBoardCorner.z));
+			//cv::Point3d rightBottomBoardCorner = board->getRightBottomCorner();
+			//colors.push_back(Eigen::Vector3d(150, 150, 0));
+			//points[ci].push_back(Eigen::Vector3d(rightBottomBoardCorner.x,
+			//	rightBottomBoardCorner.y, rightBottomBoardCorner.z));
 
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
 			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);

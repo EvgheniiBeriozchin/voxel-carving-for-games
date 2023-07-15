@@ -17,6 +17,7 @@ public:
 	cv::Mat markingFrame;
 	Eigen::Matrix4d pose;
 	Eigen::Matrix3d instrinsicMatrix;
+	std::vector<cv::Point3d> objectPoints;
 
 	Camera(cv::Mat image, const cv::Mat cameraMatrix)
 	{
@@ -47,7 +48,7 @@ public:
 		markingFrame.at<uchar>(pixel.x(), pixel.y()) = 1;
 	}
 
-	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distanceCoefficients)
+	Eigen::Matrix4d estimateCameraPose(cv::aruco::ArucoDetector *detector, cv::aruco::Board *board, cv::Mat cameraMatrix, cv::Mat distortionCoefficients)
 	{
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
@@ -57,14 +58,21 @@ public:
 		detector->detectMarkers(frame, markerCorners, markerIds, rejectedCandidates);
 		detector->refineDetectedMarkers(frame, *board, markerCorners, markerIds, rejectedCandidates);
 		board->matchImagePoints(markerCorners, markerIds, objectPoints, imagePoints);
-		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distanceCoefficients, rotationVector, translationVector);
-
+		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+		cv::solvePnPRefineLM(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+		
+		
+		this->objectPoints = objectPoints;
+		
 		Eigen::Vector3d position = Eigen::Vector3d(translationVector[0], translationVector[1], translationVector[2]);
 		cv::Mat cvRotationMatrix;
 		cv::Rodrigues(rotationVector, cvRotationMatrix);
+		cvRotationMatrix = cvRotationMatrix.t();
+
 		Eigen::Matrix4d pose;
 		Eigen::Matrix3d rotationMatrix;
 		cv::cv2eigen(cvRotationMatrix, rotationMatrix);
+		position = rotationMatrix * position;
 		pose.block(0, 0, 3, 3) = rotationMatrix;
 		pose.block(0, 3, 3, 1) = position;
 

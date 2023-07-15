@@ -40,7 +40,7 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 50;
+const int NUM_CALIBRATION_FRAMES = 20;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
@@ -61,7 +61,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 
 		cv::Mat image, currentObjectPoints, currentImagePoints;
-		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
+		video.set(1, i); //* (numFrames / NUM_CALIBRATION_FRAMES)
 		video.retrieve(image);
 		imageSize = image.size();
 
@@ -98,9 +98,13 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 	std::cout << cm << std::endl;
 	std::cout << dc << std::endl;
-	*/
+	
 	std::cout << "Camera matrix: " << localCameraMatrix << std::endl;
 	std::cout << "Distortion Coefficients: " << localDistortionCoefficients << std::endl;
+
+	localCameraMatrix = cm;
+	localDistortionCoefficients = dc;
+	*/
 
 	*cameraMatrix = localCameraMatrix;
 	*distortionCoefficients = localDistortionCoefficients;
