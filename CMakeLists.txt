@@ -22,6 +22,8 @@ set(HEADER_FILES
     voxel/SpaceCarver.h
     voxel/VoxelGrid.h
     voxel/VoxelGridExporter.h
+	voxel/SimpleMesh.h
+	voxel/MarchingCubes.h
 )
 
 add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)
