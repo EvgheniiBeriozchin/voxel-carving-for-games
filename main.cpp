@@ -14,7 +14,7 @@
 #define RUN_CAMERA_ESTIMATION_EXPORT 1
 
 
-const int NUM_PROCESSED_FRAMES = 40;
+const int NUM_PROCESSED_FRAMES = 1;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -89,13 +89,13 @@ int main() {
 		double ySizeCM = 21.5;
 		double zSizeCM = 14;
 		// VoxelDimension
-		double voxelPerCM = 10;
+		double voxelPerCM = 1;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
-		double voxelSize = 1 / voxelPerCM;
-		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
-		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(20, 30, 20), 1);
+		double voxelSize = 0.01 * 1 / voxelPerCM;
+		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
+		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(3, 3, 5), 0.05);
 
 		std::cout << "Preparing frames for voxel carving" << std::endl;
 		for (int i = 0; i < NUM_PROCESSED_FRAMES; i++)
@@ -124,7 +124,8 @@ int main() {
 			colors.push_back(Eigen::Vector3d(0, 255, 255));
 			for (int i = 0; i < cameraFrames.size(); i++)
 			{
-				points[ci].push_back(cameraFrames[i].pose.block<3, 1>(0, 3));
+				auto pos = cameraFrames[i].pose.block<3, 1>(0, 3);
+				points[ci].push_back(pos);
 			}
 			// x axis
 			ci++;
@@ -182,7 +183,18 @@ int main() {
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
 			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
 		}
-
+		// write image with projected grid positions
+		cv::Mat tf;
+		cameraFrames[0].frame.copyTo(tf);
+		for each (auto v in grid.GetSetVoxelCenterPoints())
+		{
+			auto pixelPos = cameraFrames[0].ProjectIntoCameraSpace(v);
+			if (pixelPos.x() >= tf.cols || pixelPos.y() >= tf.rows || pixelPos.x() < 0 || pixelPos.y() < 0)
+				continue;
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255),5);
+		}
+		cv::imwrite("camera_0_gray.png", tf);
+		//
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
