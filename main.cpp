@@ -89,7 +89,7 @@ int main() {
 		double ySizeCM = 21.5;
 		double zSizeCM = 14;
 		// VoxelDimension
-		double voxelPerCM = 10;
+		double voxelPerCM = 5;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
