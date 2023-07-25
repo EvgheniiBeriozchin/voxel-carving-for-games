@@ -11,6 +11,7 @@
 #include <Eigen/Geometry>
 
 typedef Eigen::Vector3f Vertex;
+typedef Eigen::Vector3f Color;
 
 struct Triangle
 {
@@ -44,6 +45,12 @@ public:
 		unsigned int vId = (unsigned int)m_vertices.size();
 		m_vertices.push_back(vertex);
 		return vId;
+	}
+
+	unsigned int AddColor(cv::Vec3b& color) {
+		unsigned int cId = (unsigned int)m_colors.size();
+		m_colors.push_back(color);
+		return cId;
 	}
 
 	unsigned int AddFace(unsigned int idx0, unsigned int idx1, unsigned int idx2)
@@ -112,6 +119,7 @@ public:
 private:
 	std::vector<Vertex> m_vertices;
 	std::vector<Triangle> m_triangles;
+	std::vector<cv::Vec3b> m_colors;
 };
 
 #endif // SIMPLE_MESH_H
