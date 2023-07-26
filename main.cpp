@@ -6,17 +6,22 @@
 #include "voxel/SpaceCarver.h"
 #include "Camera.h"
 #include "utils/utils.h"
+#include "TutteEmbedding.h"
 
-#define RUN_CAMERA_CALIBRATION 1
+#include <igl/read_triangle_mesh.h>
+
+#define RUN_CAMERA_CALIBRATION 0
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
-#define RUN_VOXEL_CARVING 1
+#define RUN_VOXEL_CARVING 0
+#define RUN_UV_TEST 1
 
 
 const int NUM_PROCESSED_FRAMES = 1000;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
+const std::string uvTestingInput = "../beetle.obj";
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
@@ -92,6 +97,58 @@ int main() {
 
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
+	}
+
+	if (RUN_UV_TEST) {
+		Eigen::MatrixXd V, U_tutte, U;
+		Eigen::MatrixXi F;
+		Eigen::MatrixXd N;
+		igl::readOBJ(uvTestingInput, V, F);
+		TutteEmbedder::GenerateUvMapping(V, F, U, N);
+
+		igl::opengl::glfw::Viewer viewer;
+
+		bool plot_parameterization = false;
+		const auto& update = [&]()
+		{
+			if (plot_parameterization)
+			{
+				// Viewer wants 3D coordinates, so pad UVs with column of zeros
+				viewer.data().set_vertices(
+					(Eigen::MatrixXd(V.rows(), 3) <<
+						U.col(0), Eigen::VectorXd::Zero(V.rows()), U.col(1)).finished());
+			}
+			else
+			{
+				viewer.data().set_vertices(V);
+			}
+			viewer.data().compute_normals();
+			viewer.data().set_uv(U * 10);
+		};
+		viewer.callback_key_pressed =
+			[&](igl::opengl::glfw::Viewer&, unsigned int key, int)
+		{
+			switch (key)
+			{
+			case ' ':
+				plot_parameterization ^= 1;
+				break;
+			case 'c':
+				viewer.data().show_texture ^= 1;
+				break;
+			default:
+				return false;
+			}
+			update();
+			return true;
+		};
+
+		viewer.data().set_mesh(V, F);
+		viewer.data().set_colors(N.array() * 0.5 + 0.5);
+		update();
+		viewer.data().show_texture = true;
+		viewer.data().show_lines = false;
+		viewer.launch();
 	}
 	
 	return 0;
