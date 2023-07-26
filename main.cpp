@@ -19,6 +19,9 @@
 #include <igl/writePLY.h>
 #include <igl/edges.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #define RUN_CAMERA_CALIBRATION 0
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
@@ -31,6 +34,68 @@ const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../beetle.obj";
+
+void Barycentric(Eigen::Vector3d& p, Eigen::Vector3d& a, Eigen::Vector3d& b, Eigen::Vector3d& c, float &u, float &v, float &w) {
+	Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
+	float d00 = v0.dot(v0);
+	float d01 = v0.dot(v1);
+	float d11 = v1.dot(v1);
+	float d20 = v2.dot(v0);
+	float d21 = v2.dot(v1);
+	float denom = d00 * d11 - d01 * d01;
+	v = (d11 * d20 - d01 * d21) / denom;
+	w = (d00 * d21 - d01 * d20) / denom;
+	u = 1.0f - v - w;
+}
+
+void writeTextureFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& VertexColors) {
+
+
+	std::cout << "Writing texture file" << std::endl;
+
+	int width = 1280;
+	int height = 720;
+
+	Eigen::MatrixXd Colors(width * 3, height );
+
+	std::cout << width * height * F.rows() << " iterations needed" << std::endl;
+
+	for (unsigned int x = 0; x < width; x + 3) {
+		std::cout << "Row " << x << " started" << std::endl;
+		for (unsigned int y = 0; y < height; y++) {
+			//get barycentric coordinates for every triangle
+			for (unsigned int k = 0; k < F.rows(); k++) {
+
+				Eigen::Vector3d p1 = V.row(F(k, 0));
+				Eigen::Vector3d p2 = V.row(F(k, 1));
+				Eigen::Vector3d p3 = V.row(F(k, 2));
+
+				Eigen::Vector3d color1 = VertexColors.row(F(k, 0));
+				Eigen::Vector3d color2 = VertexColors.row(F(k, 1));
+				Eigen::Vector3d color3 = VertexColors.row(F(k, 2));
+
+				float x_u = ((float)x / 3) / (float)width;
+				float y_v = y / (float)height;
+
+				float u, v, w;
+
+				Barycentric(Eigen::Vector3d(x_u, y_v, 0), p1, p2, p3, u, v, w);
+
+				if (u < 0 || v < 0 || w < 0) {
+					continue;
+				}
+
+				Colors(x, y) = u * color1(0) + v * color2(0) + w * color3(0);
+				Colors(x + 1, y) = u * color1(1) + v * color2(1) + w * color3(1);
+				Colors(x + 2, y) = u * color1(2) + v * color2(2) + w * color3(2);
+			}
+		}
+	}
+
+	std::string texFileName = filename.substr(0, filename.find_last_of(".")) + ".png";
+
+	stbi_write_png(texFileName.c_str(), width, height, 3, Colors.data(), width * 3);
+}
 
 void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N)
 {
@@ -57,7 +122,25 @@ void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eige
 			myfile << "vn " << N(i, 0) << " " << N(i, 1) << " " << N(i, 2) << std::endl;
 		}
 	}
+
+	//Create .mtl file reference
+	std::string mtlFileName = filename.substr(0, filename.find_last_of(".")) + ".mtl";
+	myfile << "mtllib " << mtlFileName << std::endl;
+
 	myfile.close();
+
+	//Create .mtl file
+	myfile.open(mtlFileName);
+	myfile << "newmtl material_0" << std::endl;
+	myfile << "Ka 1.000000 1.000000 1.000000" << std::endl;
+	myfile << "Kd 1.000000 1.000000 1.000000" << std::endl;
+	myfile << "Ks 0.000000 0.000000 0.000000" << std::endl;
+	myfile << "d 1.0" << std::endl;
+	myfile << "illum 2" << std::endl;
+	myfile << "Ns 0.000000" << std::endl;
+	myfile << "map_Kd " << filename.substr(0, filename.find_last_of(".")) << ".png" << std::endl;
+	myfile.close();
+
 }
 
 int main() {
@@ -151,7 +234,10 @@ int main() {
 		viewer.data().show_texture = true;
 		viewer.data().show_lines = false;
 
+		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+
 		writeObj("../beetleOut.obj", V, F, U_tutte, N);
+		writeTextureFile("../beetleOut.png", V, F, colors);
 
 
 		viewer.launch();
