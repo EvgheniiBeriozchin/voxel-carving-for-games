@@ -8,7 +8,16 @@
 #include "utils/utils.h"
 #include "TutteEmbedding.h"
 
+#include <string>
 #include <igl/read_triangle_mesh.h>
+#include <igl/per_vertex_normals.h>
+#include <igl/opengl/glfw/Viewer.h>
+#include <igl/boundary_loop.h>
+#include <igl/cotmatrix.h>
+#include <igl/map_vertices_to_circle.h>
+#include <igl/min_quad_with_fixed.h>
+#include <igl/writePLY.h>
+#include <igl/edges.h>
 
 #define RUN_CAMERA_CALIBRATION 0
 #define RUN_POSE_ESTIMATION_TEST 0
@@ -22,6 +31,34 @@ const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../beetle.obj";
+
+void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N)
+{
+	std::ofstream myfile;
+	myfile.open(filename);
+	myfile << "o " << filename << std::endl;
+	for (int i = 0; i < V.rows(); i++)
+	{
+		myfile << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << std::endl;
+	}
+	for (int i = 0; i < U.rows(); i++)
+	{
+		myfile << "vt " << U(i, 0) << " " << U(i, 1) << std::endl;
+	}
+	for (int i = 0; i < F.rows(); i++)
+	{
+		myfile << "f " << F(i, 0) + 1 << "/" << F(i, 0) + 1 << " " << F(i, 1) + 1 << "/" << F(i, 1) + 1 << " " << F(i, 2) + 1 << "/" << F(i, 2) + 1 << std::endl;
+	}
+
+	if (N.rows() > 0)
+	{
+		for (int i = 0; i < N.rows(); i++)
+		{
+			myfile << "vn " << N(i, 0) << " " << N(i, 1) << " " << N(i, 2) << std::endl;
+		}
+	}
+	myfile.close();
+}
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
@@ -100,57 +137,130 @@ int main() {
 	}
 
 	if (RUN_UV_TEST) {
-		Eigen::MatrixXd V, U_tutte, U;
+		Eigen::MatrixXd V, U_tutte, U, N;
 		Eigen::MatrixXi F;
-		Eigen::MatrixXd N;
-		igl::readOBJ(uvTestingInput, V, F);
+
+		igl::read_triangle_mesh(uvTestingInput, V, F);
+
 		TutteEmbedder::GenerateUvMapping(V, F, U, N);
 
 		igl::opengl::glfw::Viewer viewer;
 
-		bool plot_parameterization = false;
-		const auto& update = [&]()
-		{
-			if (plot_parameterization)
-			{
-				// Viewer wants 3D coordinates, so pad UVs with column of zeros
-				viewer.data().set_vertices(
-					(Eigen::MatrixXd(V.rows(), 3) <<
-						U.col(0), Eigen::VectorXd::Zero(V.rows()), U.col(1)).finished());
-			}
-			else
-			{
-				viewer.data().set_vertices(V);
-			}
-			viewer.data().compute_normals();
-			viewer.data().set_uv(U * 10);
-		};
-		viewer.callback_key_pressed =
-			[&](igl::opengl::glfw::Viewer&, unsigned int key, int)
-		{
-			switch (key)
-			{
-			case ' ':
-				plot_parameterization ^= 1;
-				break;
-			case 'c':
-				viewer.data().show_texture ^= 1;
-				break;
-			default:
-				return false;
-			}
-			update();
-			return true;
-		};
-
 		viewer.data().set_mesh(V, F);
 		viewer.data().set_colors(N.array() * 0.5 + 0.5);
-		update();
 		viewer.data().show_texture = true;
 		viewer.data().show_lines = false;
+
+		writeObj("../beetleOut.obj", V, F, U_tutte, N);
+
+
 		viewer.launch();
 	}
 	
 	return 0;
 }
  
+/*
+void tutte(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, Eigen::MatrixXd& U)
+{
+	Eigen::VectorXi bL;
+	igl::boundary_loop(F, bL);
+
+	Eigen::MatrixXd UV;
+	igl::map_vertices_to_circle(V, bL, UV);
+
+	Eigen::SparseMatrix<double> L(V.rows(), V.rows());
+	igl::cotmatrix(V, F, L);
+
+	igl::min_quad_with_fixed_data<double> data;
+	igl::min_quad_with_fixed_precompute(L, bL, Eigen::SparseMatrix<double>(), false, data);
+
+	Eigen::VectorXd B = Eigen::VectorXd::Zero(data.n, 1);
+	igl::min_quad_with_fixed_solve(data, B, UV, Eigen::MatrixXd(), U);
+	U.col(0) = -U.col(0);
+}
+
+
+int main(int argc, char* argv[])
+{
+	// Load input meshes
+	Eigen::MatrixXd V, U_tutte, U;
+	Eigen::MatrixXi F;
+
+	igl::read_triangle_mesh(
+		"../beetle.obj", V, F);
+
+	igl::opengl::glfw::Viewer viewer;
+
+	tutte(V, F, U_tutte);
+
+	// Fit parameterization in unit sphere
+	const auto normalize = [](Eigen::MatrixXd& U)
+	{
+		U.rowwise() -= U.colwise().mean().eval();
+		U.array() /=
+			(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
+	};
+	normalize(V);
+	normalize(U_tutte);
+
+	bool plot_parameterization = false;
+	const auto& update = [&]()
+	{
+		if (plot_parameterization)
+		{
+			// Viewer wants 3D coordinates, so pad UVs with column of zeros
+			viewer.data().set_vertices(
+				(Eigen::MatrixXd(V.rows(), 3) <<
+					U.col(0), Eigen::VectorXd::Zero(V.rows()), U.col(1)).finished());
+		}
+		else
+		{
+			viewer.data().set_vertices(V);
+		}
+		viewer.data().compute_normals();
+		viewer.data().set_uv(U * 10);
+	};
+	viewer.callback_key_pressed =
+		[&](igl::opengl::glfw::Viewer&, unsigned int key, int)
+	{
+		switch (key)
+		{
+		case ' ':
+			plot_parameterization ^= 1;
+			break;
+		case 'c':
+			viewer.data().show_texture ^= 1;
+			break;
+		default:
+			return false;
+		}
+		update();
+		return true;
+	};
+
+	U = U_tutte;
+	viewer.data().set_mesh(V, F);
+	Eigen::MatrixXd N;
+	igl::per_vertex_normals(V, F, N);
+	viewer.data().set_colors(N.array() * 0.5 + 0.5);
+	update();
+	viewer.data().show_texture = true;
+	viewer.data().show_lines = false;
+
+	//Create Edge List
+	Eigen::MatrixX2i E;
+
+	igl::edges(F, E);
+
+	//igl::writePLY("../beetle.ply", V, F, E, U_tutte);
+	writeObj("../beetleOut.obj", V, F, U_tutte, N);
+
+
+	viewer.launch();
+
+
+	return EXIT_SUCCESS;
+}
+
+*/

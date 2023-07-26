@@ -12,6 +12,7 @@
 
 class TutteEmbedder {
 
+
     static void tutte(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, Eigen::MatrixXd& U)
     {
         Eigen::VectorXi bL;
@@ -32,35 +33,30 @@ class TutteEmbedder {
     }
 
 
-    static void fitInUnitSphere(Eigen::MatrixXd& V, Eigen::MatrixXd& U) {
+public:
+    static void GenerateUvMapping(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N) {
+
+        Eigen::MatrixXd U_tutte;
+
+        tutte(V, F, U_tutte);
+
+        // Fit parameterization in unit sphere
         const auto normalize = [](Eigen::MatrixXd& U)
         {
             U.rowwise() -= U.colwise().mean().eval();
             U.array() /=
                 (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
         };
-
-        U.rowwise() -= V.colwise().mean().eval();
-
         normalize(V);
-        normalize(U);
-    }
-
-
-public:
-    static void GenerateUvMapping(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd N) {
-
-        Eigen::MatrixXd U_tutte;
-
-        tutte(V, F, U_tutte);
-
-
-        fitInUnitSphere(V, U_tutte);
+        normalize(U_tutte);
 
         U = U_tutte;
 
         igl::per_vertex_normals(V, F, N);
 
     }
+
+
+    // static void CreateTextureArray(Eigen::MatrixXd& U, Eigen::MatrixXd Colors)
 
 };
