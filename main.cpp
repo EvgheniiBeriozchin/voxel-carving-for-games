@@ -67,9 +67,9 @@ void writeSvgFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, 
 		Eigen::Vector3d color3 = VertexColors.row(F(k, 2));
 
 
-		Eigen::Vector2d transformedP1 = Eigen::Vector2d(p1(0) * 100 + 50, p1(1) * 100 + 50);
-		Eigen::Vector2d transformedP2 = Eigen::Vector2d(p2(0) * 100 + 50, p2(1) * 100 + 50);
-		Eigen::Vector2d transformedP3 = Eigen::Vector2d(p3(0) * 100 + 50, p3(1) * 100 + 50);
+		Eigen::Vector2d transformedP1 = Eigen::Vector2d(p1(0) * 100, p1(1) * 100);
+		Eigen::Vector2d transformedP2 = Eigen::Vector2d(p2(0) * 100, p2(1) * 100);
+		Eigen::Vector2d transformedP3 = Eigen::Vector2d(p3(0) * 100, p3(1) * 100);
 
 
 		myfile << "<polygon points = \"" << transformedP1(0) << "," << transformedP1(1) << " " << transformedP2(0) << "," << transformedP2(1) << " " << transformedP3(0) << "," << transformedP3(1) << "\" style = \"fill:rgb(" << color1(0) << "," << color1(1) << "," << color1(2) << ");stroke:rgb(" << color1(0) << "," << color1(1) << "," << color1(2) << ")\" />" << std::endl;
@@ -324,6 +324,18 @@ int main(int argc, char* argv[])
 		U.array() /=
 			(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
 	};
+
+
+	const auto normalizeZeroToOne = [](Eigen::MatrixXd& U)
+	{
+		U.rowwise() -= U.colwise().minCoeff().eval();
+		U.array() /=
+			(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff();
+	};
+
+	//normalizeZeroToOne(V);
+	//normalizeZeroToOne(U_tutte);
+
 	normalize(V);
 	normalize(U_tutte);
 
