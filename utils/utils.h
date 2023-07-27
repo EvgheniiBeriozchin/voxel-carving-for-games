@@ -40,7 +40,7 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 40;
+const int NUM_CALIBRATION_FRAMES = 20;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
@@ -61,7 +61,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 
 		cv::Mat image, currentObjectPoints, currentImagePoints;
-		video.set(1, i); //* (numFrames / NUM_CALIBRATION_FRAMES)
+		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
 		video.retrieve(image);
 		imageSize = image.size();
 
@@ -87,23 +87,73 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
 
+	for (int i = 0; i < NUM_CALIBRATION_FRAMES; i++)
+	{
+		cv::Mat imageCopy;
+		if ((i + 1) % 10 == 0)
+		{
+			std::cout << "Processed " << (i + 1) << " frames" << std::endl;
+		}
+
+		std::vector<int> markerIds;
+		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+
+		cv::Mat image, currentObjectPoints, currentImagePoints;
+		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
+		video.retrieve(image);
+		image.copyTo(imageCopy);
+		cv::drawFrameAxes(imageCopy, localCameraMatrix, localDistortionCoefficients, rvecs[i], tvecs[i], 0.1);
+		cv::imwrite("./calibrationResults/frame-" + std::to_string(i) + ".jpg", imageCopy);
+	}
+
 	/*
+	float cm_f[9] = { 1823.3715871387003, 0, 540,
+					  0, 1823.3715871387003, 960,
+					  0, 0, 1};
+	cv::Mat cm = cv::Mat(3, 3, CV_32F, cm_f);
+	float dc_f[5] = { 0.018327194204981752, 0, 0, 0, 0 };
+	cv::Mat dc = cv::Mat(1, 5, CV_32F, cm_f);
+
+	localCameraMatrix = cm;
+	localDistortionCoefficients = dc;
+
+	
 	float cm_f[9] = { 1856.296491838788, 0, 519.8483668408671,
 					  0, 1858.04034342115, 955.0267490933753,
-					  0, 0, 1 };
+					  0, 0, 1 }; 
+	float cm_f[9] = {3461.194051903984, 0, 539.2599944955601,
+	0, 3215.14225399305, 903.9439469919649,
+	0, 0, 1 };
 	cv::Mat cm = cv::Mat(3, 3, CV_32F, cm_f);
 
-	float dc_f[5] = { -0.0641685889523109, 1.33098094466823, -0.003969580929144683, -0.0007438596026286802, -3.428214031198218 };
+	//float dc_f[5] = { -0.0641685889523109, 1.33098094466823, -0.003969580929144683, -0.0007438596026286802, -3.428214031198218 };
+	float dc_f[5] = { -24.29358258111102, 936.8014431638936, 0.02815050387029168, -0.05042948592282346, -11468.8350942283 };
 	cv::Mat dc = cv::Mat(1, 5, CV_32F, cm_f);
 
 	std::cout << cm << std::endl;
 	std::cout << dc << std::endl;
-	
-	std::cout << "Camera matrix: " << localCameraMatrix << std::endl;
-	std::cout << "Distortion Coefficients: " << localDistortionCoefficients << std::endl;
 
 	localCameraMatrix = cm;
 	localDistortionCoefficients = dc;
+	*/
+	/*
+	cv::Mat image, outputImage;
+	video.retrieve(image);
+	cv::Mat newCameraMatrix = cv::getOptimalNewCameraMatrix(localCameraMatrix, localDistortionCoefficients, imageSize, 1, imageSize, 0);
+
+	// Method 1 to undistort the image
+	// cv::undistort(image, outputImage, newCameraMatrix, localDistortionCoefficients, newCameraMatrix);
+
+	// Method 2 to undistort the image
+	cv::Mat map1, map2;
+	cv::initUndistortRectifyMap(localCameraMatrix, localDistortionCoefficients, cv::Mat(), newCameraMatrix, imageSize, CV_16SC2, map1, map2);
+	cv::remap(image, outputImage, map1, map2, cv::INTER_LINEAR);
+
+	//Displaying the undistorted image
+	cv::imshow("undistorted image", outputImage);
+	cv::waitKey(0);;
+
+	*cameraMatrix = newCameraMatrix;
 	*/
 
 	*cameraMatrix = localCameraMatrix;

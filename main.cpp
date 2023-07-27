@@ -14,8 +14,8 @@
 #define RUN_CAMERA_ESTIMATION_EXPORT 1
 
 
-const int NUM_PROCESSED_FRAMES = 40;
-const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
+const int NUM_PROCESSED_FRAMES = 20;
+const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
@@ -24,6 +24,8 @@ int main() {
 	cv::VideoCapture calibrationVideo(CALIBRATION_VIDEO_NAME), reconstructionVideo(RECONSTRUCTION_VIDEO_NAME);
 	cv::aruco::ArucoDetector detector = createDetector();
 	cv::aruco::Board* board = createBoard();
+
+
 
 	if (RUN_CAMERA_CALIBRATION)
 	{
@@ -34,7 +36,6 @@ int main() {
 
 		calibrateCamera(calibrationVideo, &detector, board, &cameraMatrix, &distanceCoefficients);
 	}
-
 
 	if (RUN_POSE_ESTIMATION_TEST)
 	{
@@ -94,7 +95,7 @@ int main() {
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
-		double voxelSize = 0.01 * 1 / voxelPerCM;
+		double voxelSize = 0.01 / voxelPerCM;
 		auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(xSizeVX, ySizeVX, zSizeVX), voxelSize);
 		//auto grid = VoxelGrid::CreateFilledVoxelGrid(gridOrigin, Eigen::Vector3i(3, 3, 5), 0.05);
 
@@ -176,13 +177,8 @@ int main() {
 				}
 			}
 
-			//cv::Point3d rightBottomBoardCorner = board->getRightBottomCorner();
-			//colors.push_back(Eigen::Vector3d(150, 150, 0));
-			//points[ci].push_back(Eigen::Vector3d(rightBottomBoardCorner.x,
-			//	rightBottomBoardCorner.y, rightBottomBoardCorner.z));
-
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
-			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
+			// VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
 		}
 		int count = 0;
 		for (int i = 0; i < cameraFrames.size(); i++)
@@ -199,18 +195,39 @@ int main() {
 
 		// write image with projected grid positions
 		cv::Mat tf;
-		cameraFrames[0].frame.copyTo(tf);
-		for each (auto v in grid.GetSetVoxelCenterPoints())
+		int index = 0;
+		
+		for (auto cameraFrame: cameraFrames)
 		{
-			auto pixelPos = cameraFrames[0].ProjectIntoCameraSpace(v);
-			if (pixelPos.x() >= tf.cols || pixelPos.y() >= tf.rows || pixelPos.x() < 0 || pixelPos.y() < 0)
-				continue;
-			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255),5);
+			if (index > 10)
+				break;
+
+			cameraFrame.frame.copyTo(tf);
+			for each (auto v in grid.GetBoundaryVoxels())
+			{
+				Eigen::Vector3d v2 = grid.GetVoxelCenter(v);
+				auto pixelPos = cameraFrame.ProjectIntoCameraSpace(v2);
+				if (pixelPos.x() >= tf.cols || pixelPos.y() >= tf.rows || pixelPos.x() < 0 || pixelPos.y() < 0)
+					continue;
+				cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255),5);
+			}
+			auto pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
+			//std::cout << "00 pixel: " << pixelPos << std::endl;
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+			//std::cout << "010 pixel: " << pixelPos << std::endl;
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0.01, 0, 0));
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+			//std::cout << "001 pixel: " << pixelPos << std::endl;
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0.01, 0));
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 255, 0), 5);
+			//std::cout << "0101 pixel: " << pixelPos << std::endl;
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0.01));
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 255, 0), 5);
+			cv::imwrite("camera_" + std::to_string(index++) + "_gray.png", tf);
 		}
-		cv::imwrite("camera_0_gray.png", tf);
-		//
+		
 		std::cout << "Running voxel carving" << std::endl;
-		//SpaceCarver::MultiSweep(grid, cameraFrames);
+		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 	

@@ -35,9 +35,19 @@ public:
 		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
 		Eigen::Matrix<double, 3, 4> reshapingMatrix = Eigen::Matrix<double, 3, 4>::Identity();
 		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose.inverse() * worldPoint4;
+		Eigen::Vector2d screenSpaceCoordinates = Eigen::Vector2d(screenSpaceIntermediate.x() / -screenSpaceIntermediate.z(),
+																 screenSpaceIntermediate.y() / -screenSpaceIntermediate.z());
+		
+		cv::Size size = this->frame.size();
+		/*if (abs(screenSpaceCoordinates.x()) > (size.width / 2) || abs(screenSpaceCoordinates.y()) > (size.height / 2))
+		{
+			//std::cout << "Not in frame" << std::endl;
+			return Eigen::Vector2i(-1, -1);
+		} */
+		int x = std::floor(screenSpaceCoordinates.x());
+		int y = std::floor(- screenSpaceCoordinates.y());
 
-		return Eigen::Vector2i(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
-			screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
+		return Eigen::Vector2i(x, y);
 	}
 
 	//const Eigen::Vector2i ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
@@ -64,7 +74,8 @@ public:
 	{
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-		cv::Mat objectPoints, imagePoints;
+		std::vector<cv::Point3f> objectPoints;
+		std::vector<cv::Point2f> imagePoints;
 		cv::Vec3d rotationVector, translationVector;
 
 		detector->detectMarkers(frame, markerCorners, markerIds, rejectedCandidates);
@@ -72,20 +83,41 @@ public:
 		board->matchImagePoints(markerCorners, markerIds, objectPoints, imagePoints);
 		cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
 		cv::solvePnPRefineLM(objectPoints, imagePoints, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
-			
-		this->objectPoints = objectPoints;
 		
 		Eigen::Vector3d position = Eigen::Vector3d(translationVector[0], translationVector[1], translationVector[2]);
 		cv::Mat cvRotationMatrix;
 		cv::Rodrigues(rotationVector, cvRotationMatrix);
 		cvRotationMatrix = cvRotationMatrix.t();
 
-		Eigen::Matrix4d pose;
+		Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
 		Eigen::Matrix3d rotationMatrix;
 		cv::cv2eigen(cvRotationMatrix, rotationMatrix);
 		position = rotationMatrix * position;
 		pose.block(0, 0, 3, 3) = rotationMatrix;
 		pose.block(0, 3, 3, 1) = position;
+
+		/*cv::Mat tf;
+		frame.copyTo(tf);
+		for (int i = 0; i < imagePoints.size(); i++)
+		{
+			Eigen::Vector3d worldPoint3 = Eigen::Vector3d(imagePoints[i].x, imagePoints[i].y, 1.0f);
+			Eigen::Matrix<double, 4, 3> reshapingMatrix = Eigen::Matrix<double, 4, 3>::Identity();
+			Eigen::Vector4d screenSpaceIntermediate = pose * reshapingMatrix * instrinsicMatrix.inverse() * worldPoint3;
+			//std::cout << "point " << i << " position real: " << objectPoints[i] << std::endl;
+			//std::cout << "point " << i << " position: " << screenSpaceIntermediate << std::endl;
+			cv::circle(tf, imagePoints[i], 5, cv::Vec3b(255, 0, 0), 5);
+		}
+		
+		auto pixelPos = this->ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
+		cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+		pixelPos = this->ProjectIntoCameraSpace(Eigen::Vector3d(0.1, 0, 0));
+		cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+		pixelPos = this->ProjectIntoCameraSpace(Eigen::Vector3d(0, 0.1, 0));
+		cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 255, 0), 5);
+		pixelPos = this->ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0.1));
+		cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 255, 0), 5);
+		
+		cv::imwrite("framePoints.png", tf);*/
 
 		return pose;
 	}

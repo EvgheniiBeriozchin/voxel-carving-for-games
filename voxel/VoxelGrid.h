@@ -21,8 +21,8 @@ public:
 	VoxelGrid(double voxelSize, const Eigen::Vector3d& origin) : VoxelGrid(voxelSize, origin, Eigen::Vector3i().Zero()) {
 	}
     VoxelGrid(double voxelSize, const Eigen::Vector3d& origin, const Eigen::Vector3i& dimensions) :
-        voxelSize_(voxelSize), 
-        origin_(origin), 
+        voxelSize_(voxelSize),
+        origin_(origin),
         voxelCenterOffset_(Eigen::Vector3d(voxelSize / 2.0, voxelSize / 2.0, voxelSize / 2.0)),
         dimensions_(dimensions) {
         voxels_ = std::vector<Voxel>(dimensions.x() * dimensions.y() * dimensions.z());
