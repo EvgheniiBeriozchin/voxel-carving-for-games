@@ -33,7 +33,7 @@ const int NUM_PROCESSED_FRAMES = 1000;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
-const std::string uvTestingInput = "../beetle.obj";
+const std::string uvTestingInput = "../bunny.off";
 
 void Barycentric(Eigen::Vector3d& p, Eigen::Vector3d& a, Eigen::Vector3d& b, Eigen::Vector3d& c, float &u, float &v, float &w) {
 	Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
@@ -48,13 +48,46 @@ void Barycentric(Eigen::Vector3d& p, Eigen::Vector3d& a, Eigen::Vector3d& b, Eig
 	u = 1.0f - v - w;
 }
 
+void writeSvgFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& VertexColors) {
+	std::cout << "Writing svg file" << std::endl;
+
+	std::ofstream myfile;
+	myfile.open(filename);
+
+	myfile << "<svg xmlns = \"http://www.w3.org/2000/svg\" version = \"1.1\">" << std::endl;
+
+
+	for (unsigned int k = 0; k < F.rows(); k++) {
+		Eigen::Vector2d p1 = U.row(F(k, 0));
+		Eigen::Vector2d p2 = U.row(F(k, 1));
+		Eigen::Vector2d p3 = U.row(F(k, 2));
+
+		Eigen::Vector3d color1 = VertexColors.row(F(k, 0));
+		Eigen::Vector3d color2 = VertexColors.row(F(k, 1));
+		Eigen::Vector3d color3 = VertexColors.row(F(k, 2));
+
+
+		Eigen::Vector2d transformedP1 = Eigen::Vector2d(p1(0) * 100 + 50, p1(1) * 100 + 50);
+		Eigen::Vector2d transformedP2 = Eigen::Vector2d(p2(0) * 100 + 50, p2(1) * 100 + 50);
+		Eigen::Vector2d transformedP3 = Eigen::Vector2d(p3(0) * 100 + 50, p3(1) * 100 + 50);
+
+
+		myfile << "<polygon points = \"" << transformedP1(0) << "," << transformedP1(1) << " " << transformedP2(0) << "," << transformedP2(1) << " " << transformedP3(0) << "," << transformedP3(1) << "\" style = \"fill:rgb(" << color1(0) << "," << color1(1) << "," << color1(2) << ");stroke:rgb(" << color1(0) << "," << color1(1) << "," << color1(2) << ")\" />" << std::endl;
+	}
+
+	myfile << "</svg>" << std::endl;
+
+	myfile.close();
+
+}
+
 void writeTextureFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& VertexColors) {
 
 
 	std::cout << "Writing texture file" << std::endl;
 
-	int width = 1280;
-	int height = 720;
+	int width = 50;
+	int height = 50;
 
 	Eigen::MatrixXd Colors(width * 3, height );
 
@@ -125,9 +158,11 @@ void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eige
 
 	//Create .mtl file reference
 	std::string mtlFileName = filename.substr(0, filename.find_last_of(".")) + ".mtl";
-	myfile << "mtllib " << mtlFileName << std::endl;
+	//myfile << "mtllib " << mtlFileName << std::endl;
 
 	myfile.close();
+
+	return;
 
 	//Create .mtl file
 	myfile.open(mtlFileName);
@@ -142,7 +177,7 @@ void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eige
 	myfile.close();
 
 }
-
+/*
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
 	cv::VideoCapture calibrationVideo(CALIBRATION_VIDEO_NAME), reconstructionVideo(RECONSTRUCTION_VIDEO_NAME);
@@ -231,13 +266,15 @@ int main() {
 
 		viewer.data().set_mesh(V, F);
 		viewer.data().set_colors(N.array() * 0.5 + 0.5);
-		viewer.data().show_texture = true;
+		viewer.data().show_texture = false;
 		viewer.data().show_lines = false;
 
 		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) * 255 / 2.;
 
 		writeObj("../beetleOut.obj", V, F, U_tutte, N);
-		writeTextureFile("../beetleOut.png", V, F, colors);
+		//writeTextureFile("../beetleOut.png", V, F, colors);
+		writeSvgFile("../beetleOut.svg", V, F, colors);
 
 
 		viewer.launch();
@@ -245,8 +282,8 @@ int main() {
 	
 	return 0;
 }
- 
-/*
+ */
+
 void tutte(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, Eigen::MatrixXd& U)
 {
 	Eigen::VectorXi bL;
@@ -274,7 +311,7 @@ int main(int argc, char* argv[])
 	Eigen::MatrixXi F;
 
 	igl::read_triangle_mesh(
-		"../beetle.obj", V, F);
+		"../bunny.off", V, F);
 
 	igl::opengl::glfw::Viewer viewer;
 
@@ -339,9 +376,12 @@ int main(int argc, char* argv[])
 
 	igl::edges(F, E);
 
-	//igl::writePLY("../beetle.ply", V, F, E, U_tutte);
 	writeObj("../beetleOut.obj", V, F, U_tutte, N);
 
+
+	Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+	colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) * 255 / 2.;
+	writeSvgFile("../beetleOut.svg", V, F, U, colors);
 
 	viewer.launch();
 
@@ -349,4 +389,3 @@ int main(int argc, char* argv[])
 	return EXIT_SUCCESS;
 }
 
-*/

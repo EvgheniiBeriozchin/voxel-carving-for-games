@@ -56,7 +56,4 @@ public:
 
     }
 
-
-    // static void CreateTextureArray(Eigen::MatrixXd& U, Eigen::MatrixXd Colors)
-
 };
