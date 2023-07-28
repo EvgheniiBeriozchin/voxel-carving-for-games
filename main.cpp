@@ -11,10 +11,10 @@
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
-#define RUN_CAMERA_ESTIMATION_EXPORT 1
+#define RUN_CAMERA_ESTIMATION_EXPORT 0
 
 
-const int NUM_PROCESSED_FRAMES = 20;
+const int NUM_PROCESSED_FRAMES = 25;
 const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
@@ -88,10 +88,10 @@ int main() {
 		// Real dimension cm
 		double xSizeCM = 14;
 		double ySizeCM = 21.5;
-		double zSizeCM = 14;
+		double zSizeCM = 7;
 		// VoxelDimension
 
-		double voxelPerCM = 2;
+		double voxelPerCM = 4;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
@@ -178,7 +178,7 @@ int main() {
 			}
 
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
-			// VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
+			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
 		}
 		int count = 0;
 		for (int i = 0; i < cameraFrames.size(); i++)
@@ -197,11 +197,11 @@ int main() {
 		cv::Mat tf;
 		int index = 0;
 		
-		for (auto cameraFrame: cameraFrames)
+		for (/*auto cameraFrame: cameraFrames*/int i=0;i<1;i++)
 		{
 			//if (index > 10)
 			//	break;
-
+			auto cameraFrame = cameraFrames[i];
 			cameraFrame.frame.copyTo(tf);
 			for each (auto v in grid.GetBoundaryVoxels())
 			{
@@ -225,7 +225,6 @@ int main() {
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
 			cv::imwrite("camera_" + std::to_string(index++) + "_gray.png", tf);
 		}
-		
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);

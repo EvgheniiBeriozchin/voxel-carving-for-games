@@ -40,7 +40,7 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 60;
+const int NUM_CALIBRATION_FRAMES = 20;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
