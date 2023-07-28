@@ -40,14 +40,15 @@ cv::aruco::Board* createBoard()
 }
 
 
-const int NUM_CALIBRATION_FRAMES = 20;
+const int NUM_CALIBRATION_FRAMES = 60;
 
 void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector, cv::aruco::Board* board, 
 					 cv::Mat* cameraMatrix, cv::Mat* distortionCoefficients)
 {
 	std::cout << "Calibrating camera" << std::endl;
 	cv::Size imageSize = cv::Size(1080, 1920);
-	std::vector<cv::Mat> allObjectPoints, allImagePoints;
+	std::vector<std::vector<cv::Point3f>> allObjectPoints;
+	std::vector<std::vector<cv::Point2f>> allImagePoints;
 	int numFrames = video.get(cv::CAP_PROP_FRAME_COUNT);
 
 	for (int i = 0; i < NUM_CALIBRATION_FRAMES; i++)
@@ -59,8 +60,9 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 		std::vector<int> markerIds;
 		std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-
-		cv::Mat image, currentObjectPoints, currentImagePoints;
+		std::vector<cv::Point2f> currentImagePoints;
+		std::vector<cv::Point3f> currentObjectPoints;
+		cv::Mat image;
 		video.set(1, i * (numFrames / NUM_CALIBRATION_FRAMES));
 		video.retrieve(image);
 		imageSize = image.size();
@@ -103,6 +105,19 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		video.retrieve(image);
 		image.copyTo(imageCopy);
 		cv::drawFrameAxes(imageCopy, localCameraMatrix, localDistortionCoefficients, rvecs[i], tvecs[i], 0.1);
+
+		Camera camera = Camera(image, localCameraMatrix);
+		camera.pose = camera.estimateCameraPose(detector, board, localCameraMatrix, localDistortionCoefficients);
+		for (int j = 0; j < allImagePoints[i].size(); j++)
+		{
+			cv::Point2d pixelPos = allImagePoints[i][j];
+			cv::circle(imageCopy, cv::Point(pixelPos.x, pixelPos.y), 5, cv::Vec3b(255, 0, 0), 5);
+
+			Eigen::Vector3d pos = Eigen::Vector3d(allObjectPoints[i][j].x, allObjectPoints[i][j].y, allObjectPoints[i][j].z);
+			Eigen::Vector2i pixelPos2 = camera.ProjectIntoCameraSpace(pos);
+			cv::circle(imageCopy, cv::Point(pixelPos2.x(), pixelPos2.y()), 5, cv::Vec3b(0, 255, 0), 5);
+		}
+
 		cv::imwrite("./calibrationResults/frame-" + std::to_string(i) + ".jpg", imageCopy);
 	}
 

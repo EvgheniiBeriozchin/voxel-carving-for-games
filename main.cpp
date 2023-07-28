@@ -91,7 +91,7 @@ int main() {
 		double zSizeCM = 14;
 		// VoxelDimension
 
-		double voxelPerCM = 5;
+		double voxelPerCM = 2;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
@@ -199,8 +199,8 @@ int main() {
 		
 		for (auto cameraFrame: cameraFrames)
 		{
-			if (index > 10)
-				break;
+			//if (index > 10)
+			//	break;
 
 			cameraFrame.frame.copyTo(tf);
 			for each (auto v in grid.GetBoundaryVoxels())
@@ -213,16 +213,16 @@ int main() {
 			}
 			auto pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
 			//std::cout << "00 pixel: " << pixelPos << std::endl;
-			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 255, 0), 5);
 			//std::cout << "010 pixel: " << pixelPos << std::endl;
-			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0.01, 0, 0));
-			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0.1, 0, 0));
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255), 5);
 			//std::cout << "001 pixel: " << pixelPos << std::endl;
-			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0.01, 0));
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0.1, 0));
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 255, 0), 5);
 			//std::cout << "0101 pixel: " << pixelPos << std::endl;
-			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0.01));
-			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 255, 0), 5);
+			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0.1));
+			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
 			cv::imwrite("camera_" + std::to_string(index++) + "_gray.png", tf);
 		}
 		

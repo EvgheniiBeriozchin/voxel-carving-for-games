@@ -32,11 +32,11 @@ public:
 	}
 
 	Eigen::Vector2i ProjectIntoCameraSpace(Eigen::Vector3d worldPoint) {
-		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(worldPoint[0], worldPoint[1], worldPoint[2], 1.0f);
+		Eigen::Vector4d worldPoint4 = Eigen::Vector4d(-worldPoint[0], -worldPoint[1], -worldPoint[2], 1.0f);
 		Eigen::Matrix<double, 3, 4> reshapingMatrix = Eigen::Matrix<double, 3, 4>::Identity();
 		Eigen::Vector3d screenSpaceIntermediate = instrinsicMatrix * reshapingMatrix * pose.inverse() * worldPoint4;
-		Eigen::Vector2d screenSpaceCoordinates = Eigen::Vector2d(screenSpaceIntermediate.x() / -screenSpaceIntermediate.z(),
-																 screenSpaceIntermediate.y() / -screenSpaceIntermediate.z());
+		Eigen::Vector2d screenSpaceCoordinates = Eigen::Vector2d(screenSpaceIntermediate.x() / screenSpaceIntermediate.z(),
+																 screenSpaceIntermediate.y() / screenSpaceIntermediate.z());
 		
 		cv::Size size = this->frame.size();
 		/*if (abs(screenSpaceCoordinates.x()) > (size.width / 2) || abs(screenSpaceCoordinates.y()) > (size.height / 2))
@@ -45,7 +45,7 @@ public:
 			return Eigen::Vector2i(-1, -1);
 		} */
 		int x = std::floor(screenSpaceCoordinates.x());
-		int y = std::floor(- screenSpaceCoordinates.y());
+		int y = std::floor(screenSpaceCoordinates.y());
 
 		return Eigen::Vector2i(x, y);
 	}
