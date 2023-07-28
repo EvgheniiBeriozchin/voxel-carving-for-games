@@ -21,9 +21,9 @@ public:
 	VoxelGrid(double voxelSize, const Eigen::Vector3d& origin) : VoxelGrid(voxelSize, origin, Eigen::Vector3i().Zero()) {
 	}
     VoxelGrid(double voxelSize, const Eigen::Vector3d& origin, const Eigen::Vector3i& dimensions) :
-        voxelSize_(voxelSize), 
-        origin_(origin), 
-        voxelCenterOffset_(Eigen::Vector3d(voxelSize / 2.0, voxelSize / 2.0, voxelSize / 2.0)),
+        voxelSize_(voxelSize),
+        origin_(origin),
+        voxelCenterOffset_(Eigen::Vector3d(voxelSize / 2.0, voxelSize / 2.0, -voxelSize / 2.0)),
         dimensions_(dimensions) {
         voxels_ = std::vector<Voxel>(dimensions.x() * dimensions.y() * dimensions.z());
     }
@@ -150,7 +150,8 @@ public:
     }
 
     const Eigen::Vector3d& GetVoxelCenter(const Eigen::Vector3i& voxelPosition) {
-        return origin_ + voxelCenterOffset_ + (voxelSize_ * voxelPosition.cast<double>());
+        Eigen::Vector3i vp(voxelPosition.x(), voxelPosition.y(), -voxelPosition.z());
+        return origin_ + voxelCenterOffset_ + (voxelSize_ * vp.cast<double>());
     }
 
     static VoxelGrid CreateFilledVoxelGrid(const Eigen::Vector3d& origin, const Eigen::Vector3i& dimensions, double voxelSize = 1.0, int fillValue = 1) {

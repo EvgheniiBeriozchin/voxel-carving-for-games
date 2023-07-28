@@ -36,6 +36,43 @@ public:
 
         file.close();
     }
+    static void ExportToPLY(const std::string& filename, const std::vector<std::vector<Eigen::Vector3d>> points, const std::vector<Eigen::Vector3d> colors) {
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filename << std::endl;
+            return;
+        }
+
+        // Write the OFF file header
+       
+
+        int pointsSize = 0;
+        for (int i = 0; i < points.size(); i++) {
+            pointsSize += points[i].size();
+        }
+
+        file << "ply" << std::endl;
+        file << "format ascii 1.0" << std::endl;
+        file << "element vertex " << pointsSize << std::endl;
+        file << "property float x" << std::endl;
+        file << "property float y" << std::endl;
+        file << "property float z" << std::endl;
+        file << "property uchar red" << std::endl;
+        file << "property uchar green" << std::endl;
+        file << "property uchar blue" << std::endl;
+        file << "end_header" << std::endl;
+
+        // Write the voxel grid vertices
+        for (int i = 0; i < points.size(); i++) {
+            for (int z = 0; z < points[i].size(); z++) {
+                file << points[i][z].x() << " " << points[i][z].y() << " " << points[i][z].z() << " " << colors[i].x() << " " << colors[i].y() << " " << colors[i].z() << std::endl;
+            }
+        }
+
+
+
+        file.close();
+    }
 
 private:
 
