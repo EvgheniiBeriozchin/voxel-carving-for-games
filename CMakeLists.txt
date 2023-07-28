@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 project(voxel-carving)
 
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # Options
 set(CMAKE_CXX_STANDARD 14)
 set(LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libs CACHE PATH "Path to lib folder")
@@ -10,6 +12,12 @@ set(OpenCV_DIR ${LIBRARY_DIR}/opencv-build/cmake CACHE PATH "Path to installed O
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
+
+# Libigl
+include(libigl)
+
+# Enable the target igl::glfw
+igl_include(glfw)
 
 add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
@@ -22,6 +30,8 @@ set(HEADER_FILES
     voxel/SpaceCarver.h
     voxel/VoxelGrid.h
     voxel/VoxelGridExporter.h
+	voxel/SimpleMesh.h
+	voxel/MarchingCubes.h
 )
 
 add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)
@@ -29,6 +39,7 @@ add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)
 target_include_directories(voxel-carving PUBLIC ${EIGEN3_INCLUDE_DIR})
 target_include_directories(voxel-carving PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(voxel-carving Eigen3::Eigen)
+target_link_libraries(voxel-carving igl::glfw)
 target_link_libraries(voxel-carving ${OpenCV_LIBS})
 
 if(WIN32)
