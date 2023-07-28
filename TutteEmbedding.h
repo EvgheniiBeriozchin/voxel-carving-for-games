@@ -36,13 +36,12 @@ public:
 
         TutteEmbedder::tutte(V, F, U);
 
-        //Fit parmetrization to unit square
-        const auto normalizeToUnitSphere = [](Eigen::MatrixXd& U)
-        {
-            U.rowwise() -= U.colwise().minCoeff().eval();
-            U.array() /=
-                (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
-            // U.array() -= 1.0;
+
+        const auto normalizeToZeroToOne = [](Eigen::MatrixXd& In) {
+            float min = In.minCoeff();
+            float max = In.maxCoeff();
+
+            In = (In.array() - min) / (max - min);
         };
 
         const auto normalize = [](Eigen::MatrixXd& U)
@@ -52,10 +51,10 @@ public:
                 (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
         };
 
-        normalize(V);
-        normalize(U);
-
         igl::per_vertex_normals(V, F, N);
+
+        normalize(V);
+        normalizeToZeroToOne(U);
 
     }
 

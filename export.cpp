@@ -140,7 +140,7 @@ void MeshExport::RenderTexture(std::string textureName, Eigen::MatrixXd& U, Eige
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow(1024, 768, "Texture Render", NULL, NULL);
+	window = glfwCreateWindow(1920, 1920, "Texture Render", NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
 		getchar();
@@ -188,13 +188,28 @@ void MeshExport::RenderTexture(std::string textureName, Eigen::MatrixXd& U, Eige
 	vector<GLfloat> g_vertex_buffer_data;
 	vector<GLfloat> g_color_buffer_data;
 
+	float minV = U.col(1).minCoeff();
+	float maxV = U.col(1).maxCoeff();
+	float minU = U.col(0).minCoeff();
+	float maxU = U.col(0).maxCoeff();
+
+
+	std::cout << "minU: " << minU << std::endl;
+	std::cout << "maxU: " << maxU << std::endl;
+	std::cout << "minV: " << minV << std::endl;
+	std::cout << "maxV: " << maxV << std::endl;
+
+
 	for (int i = 0; i < F.rows(); i++) {
 		//Get the three vertices of the face
 		for (int j = 0; j < 3; j++)
 		{
 			int vertexIndex = F(i, j);
-			float u = U(vertexIndex, 0);
-			float v = U(vertexIndex, 1);
+			//Input points are UV mapped [0,1]x[0,1] so we need to scale them to [-1,1]x[-1,1]
+			float u = U(vertexIndex, 0) * 2 - 1;
+			float v = U(vertexIndex, 1) * 2 - 1;
+			//uvs origin is top left, opengl is bottom left
+			v = -v;
 			g_vertex_buffer_data.push_back(u);
 			g_vertex_buffer_data.push_back(v);
 			g_vertex_buffer_data.push_back(0.0f);
@@ -326,7 +341,7 @@ void MeshExport::WriteObj(string objName, Eigen::MatrixXd& V, Eigen::MatrixXi& F
 	//Write texture coordinates
 	for (int i = 0; i < U.rows(); i++)
 	{
-		myfile << "vt " << U(i, 0) << " " << U(i, 1) << std::endl;
+		myfile << "vt " << U(i, 0) << " " <<  U(i, 1) << std::endl;
 	}
 
 	//Write normals
