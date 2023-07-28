@@ -171,34 +171,8 @@ void MeshExport::RenderTexture(std::string textureName, Eigen::MatrixXd& U, Eige
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader");
 
-	/*
-	static const GLfloat g_vertex_buffer_data[] = {
-		-1.0f, -1.0f, 0.0f,
-		 1.0f, -1.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f,
-	};
-
-	static const GLfloat g_color_buffer_data[] = {
-		1.0f, 0.0f, 0.0f, // red
-		1.0f, 1.0f, 0.0f, // green
-		0.0f, 0.0f, 1.0f, // blue
-	};
-	*/
-
 	vector<GLfloat> g_vertex_buffer_data;
 	vector<GLfloat> g_color_buffer_data;
-
-	float minV = U.col(1).minCoeff();
-	float maxV = U.col(1).maxCoeff();
-	float minU = U.col(0).minCoeff();
-	float maxU = U.col(0).maxCoeff();
-
-
-	std::cout << "minU: " << minU << std::endl;
-	std::cout << "maxU: " << maxU << std::endl;
-	std::cout << "minV: " << minV << std::endl;
-	std::cout << "maxV: " << maxV << std::endl;
-
 
 	for (int i = 0; i < F.rows(); i++) {
 		//Get the three vertices of the face

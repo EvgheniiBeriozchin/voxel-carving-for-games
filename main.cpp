@@ -115,43 +115,19 @@ int main() {
 
 	if (RUN_UV_TEST) {
 		// Load input meshes
-		// Eigen::MatrixXd U_tutte;
 		Eigen::MatrixXd V, U, N;
 		Eigen::MatrixXi F;
 
-		igl::read_triangle_mesh( uvTestingInput, V, F);
-
+		igl::read_triangle_mesh(uvTestingInput, V, F);
 
 		TutteEmbedder::GenerateUvMapping(V, F, U, N);
-
-		/*
-		TutteEmbedder::tutte(V, F, U_tutte);
-
-		//Fit parmetrization to unit square
-		const auto normalizeToUnitSphere = [](Eigen::MatrixXd& U)
-		{
-			U.rowwise() -= U.colwise().minCoeff().eval();
-			U.array() /=
-				(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
-			U.array() -= 1.0;
-		};
-
-		normalizeToUnitSphere(V);
-		normalizeToUnitSphere(U_tutte);
-
-
-		U = U_tutte;
-		igl::per_vertex_normals(V, F, N);
-
-		*/
-
 
 		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
 		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-		MeshExport::WriteObj("../beetleOut", V, F, U, N, colors);
+		MeshExport::WriteObj("beetleOut", V, F, U, N, colors);
 
-		MeshExport::RenderTexture("../beetleOut", U, F, colors);
+		MeshExport::RenderTexture("beetleOut", U, F, colors);
 	}
 
 	return 0;

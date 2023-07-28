@@ -79,3 +79,6 @@ if(WIN32)
 endif(WIN32)
 
 SOURCE_GROUP(shaders REGULAR_EXPRESSION ".*/.*shader$" )
+
+file(COPY TransformVertexShader.vertexshader DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ColorFragmentShader.fragmentshader DESTINATION ${CMAKE_BINARY_DIR})
