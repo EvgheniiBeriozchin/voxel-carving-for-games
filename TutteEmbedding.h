@@ -1,4 +1,4 @@
-#pragma onc
+#pragma once
 
 #include <string>
 #include <iostream>
@@ -11,7 +11,7 @@
 
 class TutteEmbedder {
 
-
+public:
     static void tutte(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, Eigen::MatrixXd& U)
     {
         Eigen::VectorXi bL;
@@ -32,24 +32,28 @@ class TutteEmbedder {
     }
 
 
-public:
     static void GenerateUvMapping(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N) {
 
-        Eigen::MatrixXd U_tutte;
+        TutteEmbedder::tutte(V, F, U);
 
-        tutte(V, F, U_tutte);
+        //Fit parmetrization to unit square
+        const auto normalizeToUnitSphere = [](Eigen::MatrixXd& U)
+        {
+            U.rowwise() -= U.colwise().minCoeff().eval();
+            U.array() /=
+                (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
+            // U.array() -= 1.0;
+        };
 
-        // Fit parameterization in unit sphere
         const auto normalize = [](Eigen::MatrixXd& U)
         {
             U.rowwise() -= U.colwise().mean().eval();
             U.array() /=
                 (U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
         };
-        normalize(V);
-        normalize(U_tutte);
 
-        U = U_tutte;
+        normalize(V);
+        normalize(U);
 
         igl::per_vertex_normals(V, F, N);
 

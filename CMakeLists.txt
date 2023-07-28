@@ -56,9 +56,15 @@ set(HEADER_FILES
 	voxel/SimpleMesh.h
 	voxel/MarchingCubes.h
 	stb_image_write.h
+	TutteEmbedding.h
+	export.h
 )
 
-add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp)
+set(EXPORT_FILES
+	export.cpp
+)
+
+add_executable(voxel-carving ${UTILS} ${HEADER_FILES} ${EXPORT_FILES} main.cpp)
 
 target_include_directories(voxel-carving PUBLIC ${EIGEN3_INCLUDE_DIR})
 target_include_directories(voxel-carving PUBLIC ${OpenCV_INCLUDE_DIRS})
