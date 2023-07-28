@@ -17,6 +17,7 @@
 const int NUM_PROCESSED_FRAMES = 25;
 const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
+//const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
@@ -88,10 +89,10 @@ int main() {
 		// Real dimension cm
 		double xSizeCM = 14;
 		double ySizeCM = 21.5;
-		double zSizeCM = 7;
+		double zSizeCM = 10;
 		// VoxelDimension
 
-		double voxelPerCM = 4;
+		double voxelPerCM = 2;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
