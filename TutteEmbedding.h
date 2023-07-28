@@ -4,7 +4,6 @@
 #include <iostream>
 #include <igl/read_triangle_mesh.h>
 #include <igl/per_vertex_normals.h>
-#include <igl/opengl/glfw/Viewer.h>
 #include <igl/boundary_loop.h>
 #include <igl/cotmatrix.h>
 #include <igl/map_vertices_to_circle.h>

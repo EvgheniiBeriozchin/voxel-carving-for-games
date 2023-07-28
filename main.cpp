@@ -1,3 +1,18 @@
+// Include standard headers
+#include <stdio.h>
+#include <stdlib.h>
+
+// Include GLEW
+#include <GL/glew.h>
+
+// Include GLFW
+#include <GLFW/glfw3.h>
+GLFWwindow* window;
+
+// Include GLM
+#include <glm/glm.hpp>
+using namespace glm;
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -11,7 +26,6 @@
 #include <string>
 #include <igl/read_triangle_mesh.h>
 #include <igl/per_vertex_normals.h>
-#include <igl/opengl/glfw/Viewer.h>
 #include <igl/boundary_loop.h>
 #include <igl/cotmatrix.h>
 #include <igl/map_vertices_to_circle.h>
@@ -35,7 +49,113 @@ const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../bunny.off";
 
-void Barycentric(Eigen::Vector3d& p, Eigen::Vector3d& a, Eigen::Vector3d& b, Eigen::Vector3d& c, float &u, float &v, float &w) {
+typedef struct
+{
+	unsigned char head[12];
+	unsigned short dx /* Width */, dy /* Height */, head2;
+	unsigned char pic[768 * 1024 * 10][3];
+} typetga;
+typetga tga;
+
+unsigned char tgahead[12] = { 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+
+GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path) {
+
+	// Create the shaders
+	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+	// Read the Vertex Shader code from the file
+	std::string VertexShaderCode;
+	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
+	if (VertexShaderStream.is_open()) {
+		std::stringstream sstr;
+		sstr << VertexShaderStream.rdbuf();
+		VertexShaderCode = sstr.str();
+		VertexShaderStream.close();
+	}
+	else {
+		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
+		getchar();
+		return 0;
+	}
+
+	// Read the Fragment Shader code from the file
+	std::string FragmentShaderCode;
+	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
+	if (FragmentShaderStream.is_open()) {
+		std::stringstream sstr;
+		sstr << FragmentShaderStream.rdbuf();
+		FragmentShaderCode = sstr.str();
+		FragmentShaderStream.close();
+	}
+
+	GLint Result = GL_FALSE;
+	int InfoLogLength;
+
+
+	// Compile Vertex Shader
+	printf("Compiling shader : %s\n", vertex_file_path);
+	char const* VertexSourcePointer = VertexShaderCode.c_str();
+	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
+	glCompileShader(VertexShaderID);
+
+	// Check Vertex Shader
+	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
+	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	if (InfoLogLength > 0) {
+		std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
+		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
+		printf("%s\n", &VertexShaderErrorMessage[0]);
+	}
+
+
+
+	// Compile Fragment Shader
+	printf("Compiling shader : %s\n", fragment_file_path);
+	char const* FragmentSourcePointer = FragmentShaderCode.c_str();
+	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
+	glCompileShader(FragmentShaderID);
+
+	// Check Fragment Shader
+	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
+	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	if (InfoLogLength > 0) {
+		std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
+		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
+		printf("%s\n", &FragmentShaderErrorMessage[0]);
+	}
+
+
+
+	// Link the program
+	printf("Linking program\n");
+	GLuint ProgramID = glCreateProgram();
+	glAttachShader(ProgramID, VertexShaderID);
+	glAttachShader(ProgramID, FragmentShaderID);
+	glLinkProgram(ProgramID);
+
+	// Check the program
+	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
+	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	if (InfoLogLength > 0) {
+		std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
+		glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+		printf("%s\n", &ProgramErrorMessage[0]);
+	}
+
+
+	glDetachShader(ProgramID, VertexShaderID);
+	glDetachShader(ProgramID, FragmentShaderID);
+
+	glDeleteShader(VertexShaderID);
+	glDeleteShader(FragmentShaderID);
+
+	return ProgramID;
+}
+
+void Barycentric(Eigen::Vector3d& p, Eigen::Vector3d& a, Eigen::Vector3d& b, Eigen::Vector3d& c, float& u, float& v, float& w) {
 	Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
 	float d00 = v0.dot(v0);
 	float d01 = v0.dot(v1);
@@ -89,7 +209,7 @@ void writeTextureFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi&
 	int width = 50;
 	int height = 50;
 
-	Eigen::MatrixXd Colors(width * 3, height );
+	Eigen::MatrixXd Colors(width * 3, height);
 
 	std::cout << width * height * F.rows() << " iterations needed" << std::endl;
 
@@ -130,31 +250,31 @@ void writeTextureFile(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi&
 	stbi_write_png(texFileName.c_str(), width, height, 3, Colors.data(), width * 3);
 }
 
-void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N)
+void writeObj(std::string filename, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N, Eigen::MatrixXd& Col)
 {
 	std::ofstream myfile;
 	myfile.open(filename);
 	myfile << "o " << filename << std::endl;
 	for (int i = 0; i < V.rows(); i++)
 	{
-		myfile << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << std::endl;
+		//myfile << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << std::endl;
+		myfile << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << " " << Col(i, 0) << " " << Col(i, 1) << " " << Col(i, 2) << std::endl;
 	}
 	for (int i = 0; i < U.rows(); i++)
 	{
 		myfile << "vt " << U(i, 0) << " " << U(i, 1) << std::endl;
 	}
-	for (int i = 0; i < F.rows(); i++)
+
+	for (int i = 0; i < N.rows(); i++)
 	{
-		myfile << "f " << F(i, 0) + 1 << "/" << F(i, 0) + 1 << " " << F(i, 1) + 1 << "/" << F(i, 1) + 1 << " " << F(i, 2) + 1 << "/" << F(i, 2) + 1 << std::endl;
+		myfile << "vn " << N(i, 0) << " " << N(i, 1) << " " << N(i, 2) << std::endl;
 	}
 
-	if (N.rows() > 0)
+	for (int i = 0; i < F.rows(); i++)
 	{
-		for (int i = 0; i < N.rows(); i++)
-		{
-			myfile << "vn " << N(i, 0) << " " << N(i, 1) << " " << N(i, 2) << std::endl;
-		}
+		myfile << "f " << F(i, 0) + 1 << "/" << F(i, 0) + 1 << "/" << F(i, 0) + 1 << " " << F(i, 1) + 1 << "/" << F(i, 1) + 1 << "/" << F(i, 1) + 1 << " " << F(i, 2) + 1 << "/" << F(i, 2) + 1 << "/" << F(i, 2) + 1 << std::endl;
 	}
+
 
 	//Create .mtl file reference
 	std::string mtlFileName = filename.substr(0, filename.find_last_of(".")) + ".mtl";
@@ -230,7 +350,7 @@ int main() {
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 
-	if (RUN_VOXEL_CARVING) 
+	if (RUN_VOXEL_CARVING)
 	{
 		if (!videoExists(reconstructionVideo))
 		{
@@ -279,7 +399,7 @@ int main() {
 
 		viewer.launch();
 	}
-	
+
 	return 0;
 }
  */
@@ -313,7 +433,6 @@ int main(int argc, char* argv[])
 	igl::read_triangle_mesh(
 		"../bunny.off", V, F);
 
-	igl::opengl::glfw::Viewer viewer;
 
 	tutte(V, F, U_tutte);
 
@@ -333,70 +452,194 @@ int main(int argc, char* argv[])
 			(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff();
 	};
 
+	const auto normalizeMinusOneToOne = [](Eigen::MatrixXd& U)
+	{
+		U.rowwise() -= U.colwise().minCoeff().eval();
+		U.array() /=
+			(U.colwise().maxCoeff() - U.colwise().minCoeff()).maxCoeff() / 2.0;
+		U.array() -= 1.0;
+	};
+
 	//normalizeZeroToOne(V);
 	//normalizeZeroToOne(U_tutte);
 
-	normalize(V);
-	normalize(U_tutte);
+	normalizeMinusOneToOne(V);
+	normalizeMinusOneToOne(U_tutte);
 
-	bool plot_parameterization = false;
-	const auto& update = [&]()
-	{
-		if (plot_parameterization)
-		{
-			// Viewer wants 3D coordinates, so pad UVs with column of zeros
-			viewer.data().set_vertices(
-				(Eigen::MatrixXd(V.rows(), 3) <<
-					U.col(0), Eigen::VectorXd::Zero(V.rows()), U.col(1)).finished());
-		}
-		else
-		{
-			viewer.data().set_vertices(V);
-		}
-		viewer.data().compute_normals();
-		viewer.data().set_uv(U * 10);
-	};
-	viewer.callback_key_pressed =
-		[&](igl::opengl::glfw::Viewer&, unsigned int key, int)
-	{
-		switch (key)
-		{
-		case ' ':
-			plot_parameterization ^= 1;
-			break;
-		case 'c':
-			viewer.data().show_texture ^= 1;
-			break;
-		default:
-			return false;
-		}
-		update();
-		return true;
-	};
+	printf("Min and max: \n");
+
 
 	U = U_tutte;
-	viewer.data().set_mesh(V, F);
 	Eigen::MatrixXd N;
 	igl::per_vertex_normals(V, F, N);
-	viewer.data().set_colors(N.array() * 0.5 + 0.5);
-	update();
-	viewer.data().show_texture = true;
-	viewer.data().show_lines = false;
-
-	//Create Edge List
-	Eigen::MatrixX2i E;
-
-	igl::edges(F, E);
-
-	writeObj("../beetleOut.obj", V, F, U_tutte, N);
 
 
 	Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
-	colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) * 255 / 2.;
-	writeSvgFile("../beetleOut.svg", V, F, U, colors);
+	colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-	viewer.launch();
+	writeObj("../beetleOut.obj", V, F, U_tutte, N, colors);
 
+	// Initialise GLFW
+	if (!glfwInit())
+	{
+		fprintf(stderr, "Failed to initialize GLFW\n");
+		getchar();
+		return -1;
+	}
+
+	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	// Open a window and create its OpenGL context
+	window = glfwCreateWindow(1024, 768, "Texture Render", NULL, NULL);
+	if (window == NULL) {
+		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
+		getchar();
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+
+	// Initialize GLEW
+	glewExperimental = true; // Needed for core profile
+	if (glewInit() != GLEW_OK) {
+		fprintf(stderr, "Failed to initialize GLEW\n");
+		getchar();
+		glfwTerminate();
+		return -1;
+	}
+
+	// Ensure we can capture the escape key being pressed below
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+	// Dark blue background
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+	GLuint VertexArrayID;
+	glGenVertexArrays(1, &VertexArrayID);
+	glBindVertexArray(VertexArrayID);
+
+	// Create and compile our GLSL program from the shaders
+	GLuint programID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader");
+
+	/*
+	static const GLfloat g_vertex_buffer_data[] = {
+		-1.0f, -1.0f, 0.0f,
+		 1.0f, -1.0f, 0.0f,
+		 0.0f,  1.0f, 0.0f,
+	};
+
+	static const GLfloat g_color_buffer_data[] = {
+		1.0f, 0.0f, 0.0f, // red
+		1.0f, 1.0f, 0.0f, // green
+		0.0f, 0.0f, 1.0f, // blue
+	};
+	*/
+
+	std::vector<GLfloat> g_vertex_buffer_data;
+	std::vector<GLfloat> g_color_buffer_data;
+
+	for (int i = 0; i < F.rows(); i++) {
+		//Get the three vertices of the face
+		for (int j = 0; j < 3; j++)
+		{
+			int vertexIndex = F(i, j);
+			float u = U(vertexIndex, 0);
+			float v = U(vertexIndex, 1);
+			g_vertex_buffer_data.push_back(u);
+			g_vertex_buffer_data.push_back(v);
+			g_vertex_buffer_data.push_back(0.0f);
+
+			g_color_buffer_data.push_back(colors(vertexIndex, 0));
+			g_color_buffer_data.push_back(colors(vertexIndex, 1));
+			g_color_buffer_data.push_back(colors(vertexIndex, 2));
+		}
+	}
+
+	GLuint vertexbuffer;
+	glGenBuffers(1, &vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * sizeof(GLfloat), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
+
+	GLuint colorbuffer;
+	glGenBuffers(1, &colorbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+	glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * sizeof(GLfloat), &g_color_buffer_data[0], GL_STATIC_DRAW);
+
+
+	glfwHideWindow(window);
+
+	// Clear the screen
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// Use our shader
+	glUseProgram(programID);
+
+	// 1rst attribute buffer : vertices
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glVertexAttribPointer(
+		0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+		3,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+
+	// 2nd attribute buffer : colors
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+	glVertexAttribPointer(
+		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
+	// Draw the triangle !
+	glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size()); // 3 indices starting at 0 -> 1 triangle
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+
+	// Swap buffers
+	glfwSwapBuffers(window);
+	glfwPollEvents();
+
+	int screenWidth, screenHeight;
+	glfwGetFramebufferSize(window, &screenWidth, &screenHeight); /* Get size, store into specified variables  */
+
+	/* Prepare the targa header */
+	memcpy(tga.head, tgahead, 12);
+	tga.dx = screenWidth;
+	tga.dy = screenHeight;
+	tga.head2 = 0x2018;
+
+	std::cout << "creating texture file" << std::endl;
+
+	/* Store pixels into tga.pic */
+	glReadPixels(0, 0, screenWidth, screenHeight, GL_RGB, GL_UNSIGNED_BYTE, tga.pic[0]);
+
+	std::string filename = "screenshot.png";
+
+	stbi_write_png(filename.c_str(), screenWidth, screenHeight, 3, tga.pic[0], screenWidth * 3);
+
+	std::cout << "texture file written" << std::endl;
+
+	// Cleanup VBO
+	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &colorbuffer);
+	glDeleteVertexArrays(1, &VertexArrayID);
+	glDeleteProgram(programID);
+
+	// Close OpenGL window and terminate GLFW
+	glfwTerminate();
 
 	return EXIT_SUCCESS;
 }
