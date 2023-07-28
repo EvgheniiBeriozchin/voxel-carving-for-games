@@ -181,6 +181,33 @@ public:
 		return voxelGrid;
 	}
 
+	const cv::Vec3b GetVoxelColor(const Eigen::Vector3i& voxelPosition) {
+		// gets average color (Other option would be dominant color)
+		std::vector<cv::Vec3b> colors;
+		Eigen::Vector3d voxelWorldPos = GetVoxelCenter(voxelPosition);
+		Voxel v = GetVoxel(voxelPosition);
+		for (Camera c : v.cameras) {
+			Eigen::Vector2i cameraPos = c.ProjectIntoCameraSpace(voxelWorldPos);
+			colors.push_back(c.frame.at<cv::Vec3b>(cameraPos.x(), cameraPos.y()));
+		}
+		cv::Vec3i sumColor(0, 0, 0);
+		for (const cv::Vec3b& color : colors) {
+			sumColor += cv::Vec3i(color[0], color[1], color[2]);
+		}
+
+		int numColors = colors.size();
+		cv::Vec3b averageColor(
+			static_cast<unsigned char>(sumColor[0] / numColors),
+			static_cast<unsigned char>(sumColor[1] / numColors),
+			static_cast<unsigned char>(sumColor[2] / numColors)
+		);
+
+		return averageColor;
+	}
+	const cv::Vec3b GetVoxelColor(const int& x, const int& y, const int& z)
+	{
+		return GetVoxelColor(Eigen::Vector3i(x, y, z));
+	}
 
 private:
 	double voxelSize_;
