@@ -180,6 +180,15 @@ public:
 
 		return voxelGrid;
 	}
+	static VoxelGrid GetZeroEnclosedVoxelGrid(VoxelGrid& voxelgrid) {
+		VoxelGrid newVoxelGrid(voxelgrid.voxelSize_, voxelgrid.origin_ - Eigen::Vector3d(1, 1, 1) * voxelgrid.voxelSize_, voxelgrid.dimensions_ + Eigen::Vector3i(2, 2, 2));
+		std::fill(newVoxelGrid.voxels_.begin(), newVoxelGrid.voxels_.end(), Voxel(0));
+		const std::vector<Eigen::Vector3i> setVoxels = voxelgrid.GetSetVoxels();
+		for (auto voxel : setVoxels) {
+			newVoxelGrid.AddVoxel(voxel + Eigen::Vector3i(1, 1, 1), Voxel(1));
+		}
+		return newVoxelGrid;
+	}
 
 	const cv::Vec3b GetVoxelColor(const Eigen::Vector3i& voxelPosition) {
 		// gets average color (Other option would be dominant color)
