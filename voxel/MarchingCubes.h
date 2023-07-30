@@ -462,9 +462,9 @@ void CreateMesh(VoxelGrid* grid, SimpleMesh* mesh) {
 	Eigen::Vector3i dim;
 	dim = grid->GetDimensions();
 
-	for (unsigned int i = 0; i < dim[0] - 1; i++) {
-		for (unsigned int j = 0; j < dim[1] - 1; j++) {
-			for (unsigned int h = 0; h < dim[2] - 1; h++) {
+	for (unsigned int i = 0; i < dim[0]; i++) {
+		for (unsigned int j = 0; j < dim[1]; j++) {
+			for (unsigned int h = 0; h < dim[2]; h++) {
 				ProcessVoxelGridCell(grid, i, j, h, 1.00f, mesh);
 			}
 		}

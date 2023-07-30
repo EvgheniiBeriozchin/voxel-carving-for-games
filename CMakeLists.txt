@@ -31,6 +31,7 @@ add_definitions("-D_DISABLE_EXTENDED_ALIGNED_STORAGE")
 
 set(UTILS
     utils/utils.h
+	volume.cpp
 )
 
 
@@ -57,6 +58,9 @@ set(HEADER_FILES
 	voxel/MarchingCubes.h
 	stb_image_write.h
 	TutteEmbedding.h
+	RBF.h
+	MarchingCubes2.h
+	Volume.h
 	export.h
 )
 

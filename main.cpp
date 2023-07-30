@@ -7,6 +7,14 @@
 #include "voxel/VoxelGrid.h"
 #include "voxel/VoxelGridExporter.h"
 #include "voxel/SpaceCarver.h"
+
+#include "voxel/SimpleMesh.h"
+#include "voxel/MarchingCubes.h"
+#include "MarchingCubes2.h"
+#include "Volume.h"
+#include "RBF.h"
+#include <igl/per_vertex_normals.h>
+
 #include "Camera.h"
 #include "utils/utils.h"
 #include "TutteEmbedding.h"
@@ -28,12 +36,13 @@
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_UV_TEST 1
+#define RUN_MESH_GENERATION 1
+#define RUN_UV_TEST 0
 
 
 const int NUM_PROCESSED_FRAMES = 25;
-const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
-const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
+const std::string CALIBRATION_VIDEO_NAME = "../Poro_NaturalLight.mp4";
+const std::string RECONSTRUCTION_VIDEO_NAME = "../Poro_NaturalLight.mp4";
 //const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../bunny.off";
@@ -247,6 +256,66 @@ int main() {
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
+
+		if (RUN_MESH_GENERATION)
+		{
+			SimpleMesh mesh;
+			VoxelGrid enclosedGrid = VoxelGrid::GetZeroEnclosedVoxelGrid(grid);
+			CreateMesh(&enclosedGrid, &mesh);
+			mesh.WriteMesh("mesh.off");
+			IglInputFormat formattedMesh = mesh.GetIglInputFormat();
+			std::cout << "Generated first mesh" << std::endl;
+
+			Eigen::MatrixXd N;
+			igl::per_vertex_normals(formattedMesh.V, formattedMesh.F, N);
+			std::cout << "Generated normals" << std::endl;
+
+			ImplicitSurface* surface;
+
+			int arity = 5;
+			Eigen::Matrix<double, 1000, 3> Vf, Nf;
+			int index = 0;
+			for (int i = 0; i < formattedMesh.V.rows() && i < 1000; i += arity)
+			{
+				Vf.row(index++) = formattedMesh.V.row(i);
+				Nf.row(index++) = N.row(i);
+			}
+			surface = new RBF(Vf, Nf);
+			std::cout << "Generated implicit surface: " << std::endl;
+			// fill volume with signed distance values
+			unsigned int mc_res = 10; // resolution of the grid, for debugging you can reduce the resolution (-> faster)
+			Volume vol(Eigen::Vector3d(-0.1, -0.1, -0.1), Eigen::Vector3d(1.1, 1.1, 1.1), mc_res, mc_res, mc_res, 1);
+			for (unsigned int x = 0; x < vol.getDimX(); x++)
+			{
+				for (unsigned int y = 0; y < vol.getDimY(); y++)
+				{
+					for (unsigned int z = 0; z < vol.getDimZ(); z++)
+					{
+						Eigen::Vector3d p = vol.pos(x, y, z);
+						double val = surface->Eval(p);
+						vol.set(x, y, z, val);
+					}
+				}
+			}
+
+			// extract the zero iso-surface using marching cubes
+			SimpleMesh mesh2;
+			for (unsigned int x = 0; x < vol.getDimX() - 1; x++)
+			{
+				std::cerr << "Marching Cubes on slice " << x << " of " << vol.getDimX() << std::endl;
+
+				for (unsigned int y = 0; y < vol.getDimY() - 1; y++)
+				{
+					for (unsigned int z = 0; z < vol.getDimZ() - 1; z++)
+					{
+						ProcessVolumeCell2(&vol, x, y, z, 0.00f, &mesh2);
+					}
+				}
+			}
+
+			std::cout << "Generated second mesh" << std::endl;
+			mesh2.WriteMesh("mesh2.off");
+		}
 
 		if (RUN_UV_TEST) {
 		// Load input meshes
