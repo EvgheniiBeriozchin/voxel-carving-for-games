@@ -254,9 +254,12 @@ int main() {
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 
 
+		std::cout << "Creating zero enclosed voxel grid" << std::endl;
+		VoxelGrid enclosedGrid = VoxelGrid::GetZeroEnclosedVoxelGrid(grid);
+
 		std::cout << "Creating Mesh" << std::endl;
 		SimpleMesh mesh;
-		CreateMesh(&grid, &mesh);
+		CreateMesh(&enclosedGrid, &mesh);
 		std::cout << "Mesh created" << std::endl;
 		std::cout << "Vertices: " << mesh.GetVertices().size() << std::endl;
 		std::cout << "Faces: " << mesh.GetTriangles().size() << std::endl;
