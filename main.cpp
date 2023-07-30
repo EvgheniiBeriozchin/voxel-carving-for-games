@@ -1,3 +1,7 @@
+// Include standard headers
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -6,17 +10,32 @@
 #include "voxel/SpaceCarver.h"
 #include "Camera.h"
 #include "utils/utils.h"
+#include "TutteEmbedding.h"
 
-#define RUN_CAMERA_CALIBRATION 1
+#include <string>
+#include <igl/read_triangle_mesh.h>
+#include <igl/per_vertex_normals.h>
+#include <igl/boundary_loop.h>
+#include <igl/cotmatrix.h>
+#include <igl/map_vertices_to_circle.h>
+#include <igl/min_quad_with_fixed.h>
+#include <igl/writePLY.h>
+#include <igl/edges.h>
+#include <export.h>
+
+#define RUN_CAMERA_CALIBRATION 0
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
-#define RUN_VOXEL_CARVING 1
+#define RUN_VOXEL_CARVING 0
+#define RUN_UV_TEST 1
 
 
 const int NUM_PROCESSED_FRAMES = 1000;
 const std::string CALIBRATION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
+const std::string uvTestingInput = "../bunny.off";
+
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
@@ -70,7 +89,7 @@ int main() {
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 
-	if (RUN_VOXEL_CARVING) 
+	if (RUN_VOXEL_CARVING)
 	{
 		if (!videoExists(reconstructionVideo))
 		{
@@ -93,7 +112,23 @@ int main() {
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
-	
+
+	if (RUN_UV_TEST) {
+		// Load input meshes
+		Eigen::MatrixXd V, U, N;
+		Eigen::MatrixXi F;
+
+		igl::read_triangle_mesh(uvTestingInput, V, F);
+
+		TutteEmbedder::GenerateUvMapping(V, F, U, N);
+
+		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
+
+		MeshExport::WriteObj("beetleOut", V, F, U, N, colors);
+
+		MeshExport::RenderTexture("beetleOut", U, F, colors);
+	}
+
 	return 0;
 }
- 

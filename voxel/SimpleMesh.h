@@ -11,6 +11,7 @@
 #include <Eigen/Geometry>
 
 typedef Eigen::Vector3f Vertex;
+typedef Eigen::Vector3f Color;
 
 struct Triangle
 {
@@ -27,6 +28,7 @@ struct Triangle
 struct IglInputFormat {
 	Eigen::MatrixXd V;
 	Eigen::MatrixXi F;
+	Eigen::MatrixXd Colors;
 };
 
 class SimpleMesh
@@ -44,6 +46,12 @@ public:
 		unsigned int vId = (unsigned int)m_vertices.size();
 		m_vertices.push_back(vertex);
 		return vId;
+	}
+
+	unsigned int AddColor(cv::Vec3b& color) {
+		unsigned int cId = (unsigned int)m_colors.size();
+		m_colors.push_back(color);
+		return cId;
 	}
 
 	unsigned int AddFace(unsigned int idx0, unsigned int idx1, unsigned int idx2)
@@ -69,6 +77,7 @@ public:
 		IglInputFormat iglInputFormat;
 		iglInputFormat.V.resize(m_vertices.size(), 3);
 		iglInputFormat.F.resize(m_triangles.size(), 3);
+		iglInputFormat.Colors.resize(m_colors.size(), 3);
 		for (unsigned int i = 0; i < m_vertices.size(); i++)
 		{
 			iglInputFormat.V.row(i) = m_vertices[i];
@@ -77,6 +86,12 @@ public:
 		{
 			iglInputFormat.F.row(i) = Eigen::Vector3i(m_triangles[i].idx0, m_triangles[i].idx1, m_triangles[i].idx2);
 		}
+
+		for (unsigned int i = 0; i < m_colors.size(); i++)
+		{
+			iglInputFormat.Colors.row(i) = Eigen::Vector3d(m_colors[i][0], m_colors[i][1], m_colors[i][2]);
+		}
+
 		return iglInputFormat;
 	}
 
@@ -112,6 +127,7 @@ public:
 private:
 	std::vector<Vertex> m_vertices;
 	std::vector<Triangle> m_triangles;
+	std::vector<cv::Vec3b> m_colors;
 };
 
 #endif // SIMPLE_MESH_H

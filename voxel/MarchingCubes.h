@@ -450,13 +450,20 @@ bool ProcessVoxelGridCell(VoxelGrid* grid, int x, int y, int z, double iso, Simp
 	for (int i1 = 0; i1 < ntri; i1++)
 	{
 		Vertex v0((float)tris[i1].p[0][0], (float)tris[i1].p[0][1], (float)tris[i1].p[0][2]);
+		cv::Vec3b c0 = grid->GetVoxelColor((int)tris[i1].p[0][0], (int)tris[i1].p[0][1], (int)tris[i1].p[0][2]);
 		Vertex v1((float)tris[i1].p[1][0], (float)tris[i1].p[1][1], (float)tris[i1].p[1][2]);
+		cv::Vec3b c1 = grid->GetVoxelColor((int)tris[i1].p[1][0], (int)tris[i1].p[1][1], (int)tris[i1].p[1][2]);
 		Vertex v2((float)tris[i1].p[2][0], (float)tris[i1].p[2][1], (float)tris[i1].p[2][2]);
+		cv::Vec3b c2 = grid->GetVoxelColor((int)tris[i1].p[2][0], (int)tris[i1].p[2][1], (int)tris[i1].p[2][2]);
 
 		unsigned int vhandle[3]{};
 		vhandle[0] = mesh->AddVertex(v0);
 		vhandle[1] = mesh->AddVertex(v1);
 		vhandle[2] = mesh->AddVertex(v2);
+
+		mesh->AddColor(c0);
+		mesh->AddColor(c1);
+		mesh->AddColor(c2);
 
 		mesh->AddFace(vhandle[0], vhandle[1], vhandle[2]);
 	}
