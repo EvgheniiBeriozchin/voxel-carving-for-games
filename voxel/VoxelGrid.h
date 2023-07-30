@@ -198,6 +198,7 @@ public:
 		int numColors = colors.size();
 		if (numColors == 0)
 			return cv::Vec3b(255, 255, 255);
+    
 		cv::Vec3b averageColor(
 			static_cast<unsigned char>(sumColor[0] / numColors),
 			static_cast<unsigned char>(sumColor[1] / numColors),

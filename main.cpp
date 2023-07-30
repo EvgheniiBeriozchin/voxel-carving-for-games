@@ -4,6 +4,8 @@
 #include "voxel/VoxelGrid.h"
 #include "voxel/VoxelGridExporter.h"
 #include "voxel/SpaceCarver.h"
+#include "voxel/MarchingCubes.h"
+#include "voxel/SimpleMesh.h"
 #include "Camera.h"
 #include "utils/utils.h"
 
@@ -93,7 +95,7 @@ int main() {
 		double zSizeCM = 10;
 		// VoxelDimension
 
-		double voxelPerCM = 2;
+		double voxelPerCM = 5;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
@@ -230,6 +232,10 @@ int main() {
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
+		
+		SimpleMesh mesh;
+		CreateMesh(&grid, &mesh);
+		mesh.WriteMesh("mesh.off");
 	}
 	
 	return 0;
