@@ -65,6 +65,11 @@ public:
 		return m_triangles;
 	}
 
+	std::vector<cv::Vec3b>& GetColors()
+	{
+		return m_colors;
+	}
+
 	void GetMeshData(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::MatrixXi &Colors)
 	{
 		V.resize(m_vertices.size(), 3);
@@ -81,7 +86,7 @@ public:
 
 		for (unsigned int i = 0; i < m_colors.size(); i++)
 		{
-			Colors.row(i) = Eigen::Vector3d(m_colors[i][3], m_colors[i][1], m_colors[i][0]);
+			Colors.row(i) = Eigen::Vector3i(m_colors[i][2], m_colors[i][1], m_colors[i][0]);
 		}
 	}
 

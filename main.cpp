@@ -32,7 +32,7 @@
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_TUTTE_EMBEDDING 0
+#define RUN_TUTTE_EMBEDDING_TEST 0
 #define EXPORT_TEXTURED_MESH 1
 
 
@@ -253,8 +253,15 @@ int main() {
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 
+
+		std::cout << "Creating Mesh" << std::endl;
 		SimpleMesh mesh;
 		CreateMesh(&grid, &mesh);
+		std::cout << "Mesh created" << std::endl;
+		std::cout << "Vertices: " << mesh.GetVertices().size() << std::endl;
+		std::cout << "Colors: " << mesh.GetColors().size() << std::endl;
+		std::cout << "Faces: " << mesh.GetTriangles().size() << std::endl;
+
 
 		if (EXPORT_TEXTURED_MESH) {
 			// Load input meshes
@@ -266,10 +273,16 @@ int main() {
 			// Debug
 			// igl::read_triangle_mesh(uvTestingInput, V, F);
 
+			// Compute UV mapping
+			std::cout << "Computing UV mapping" << std::endl;
 			TutteEmbedder::GenerateUvMapping(V, F, U, N);
+			std::cout << "UV mapping computed" << std::endl;
 
 			//C is in [0,255] rgb, export and render need [0,1] rgb
-			Eigen::MatrixXd colors = C.cast<double>() / 255.0;
+			//Eigen::MatrixXd colors = C.cast<double>() / 255.0;
+
+			Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+			colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
 			MeshExport::WriteObj("mesh", V, F, U, N, colors);
 
@@ -281,7 +294,7 @@ int main() {
 		mesh.WriteMesh("mesh.off");
 	}
 
-	if (RUN_TUTTE_EMBEDDING) {
+	if (RUN_TUTTE_EMBEDDING_TEST) {
 		// Load input meshes
 		Eigen::MatrixXd V, U, N;
 		Eigen::MatrixXi F;
