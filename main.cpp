@@ -259,7 +259,6 @@ int main() {
 		CreateMesh(&grid, &mesh);
 		std::cout << "Mesh created" << std::endl;
 		std::cout << "Vertices: " << mesh.GetVertices().size() << std::endl;
-		std::cout << "Colors: " << mesh.GetColors().size() << std::endl;
 		std::cout << "Faces: " << mesh.GetTriangles().size() << std::endl;
 
 
