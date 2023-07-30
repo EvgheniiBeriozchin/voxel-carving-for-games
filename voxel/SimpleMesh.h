@@ -10,8 +10,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-typedef Eigen::Vector3f Vertex;
-typedef Eigen::Vector3f Color;
+typedef Eigen::Vector3d Vertex;
+typedef Eigen::Vector3i Color;
 
 struct Triangle
 {
