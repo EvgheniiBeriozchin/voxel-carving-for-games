@@ -16,10 +16,11 @@
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
 
 
-const int NUM_PROCESSED_FRAMES = 25;
+const int NUM_PROCESSED_FRAMES = 70;
 const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 //const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
+//const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_2.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 
 int main() {
