@@ -28,7 +28,7 @@ public:
 
         // Write the voxel grid vertices
         for (int i = 0; i < voxels.size();i++) {
-            file << voxels[i].x() << " " << voxels[i].y() << " " << voxels[i].z() << " " << colors[i][0] << " " << colors[i][1] << " " << colors[i][2] << " " << 255 << std::endl;
+            file << voxels[i].x() << " " << voxels[i].y() << " " << voxels[i].z() << " " << colors[i][2] << " " << colors[i][1] << " " << colors[i][0] << " " << 255 << std::endl;
         }
 
         // Write the voxel grid faces
