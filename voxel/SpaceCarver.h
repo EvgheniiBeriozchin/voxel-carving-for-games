@@ -1,12 +1,18 @@
 #pragma once
 #include "VoxelGrid.h"
 #include "../Camera.h"
+#include <omp.h>
+
 
 // if greyscale color is greater than this its regarded as bright.
 const int DARK_THRESHOLD = 150;
 
 // if this percentage of cameras are inconsistent the voxel is inconsistent and will be carved
 const float INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
+const float MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
+
+// only use camera if camera_vector dot plane_normal greater than this value.(0 => above plane | 1 => equal to normal | ~0.6 => 45°)
+const float CAMERA_ABOVE_PLANE_THRESHOLD = 0;
 
 class SpaceCarver {
 public:
@@ -30,6 +36,7 @@ public:
 		case SpaceCarvingDirection::XPos:
 			planeNormal = Eigen::Vector3d(-1, 0, 0);
 			xEnd = 0;// Every single sweep only 1 layer at a time
+#pragma omp parallel for
 			for (int x = 0; x < voxel_grid.GetDimensions().x(); x++) {
 				std::cout << "Sweep x: " << x << "/" << voxel_grid.GetDimensions().x() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, x, x, yStart, yEnd, zStart, zEnd);
@@ -38,6 +45,7 @@ public:
 		case SpaceCarvingDirection::XNeg:
 			planeNormal = Eigen::Vector3d(1, 0, 0);
 			xEnd = 0;
+#pragma omp parallel for
 			for (int x = voxel_grid.GetDimensions().x() -1; x >= 0; x--) {
 				std::cout << "Sweep x: " << x << "/" << voxel_grid.GetDimensions().x() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, x, x, yStart, yEnd, zStart, zEnd);
@@ -46,6 +54,7 @@ public:
 		case SpaceCarvingDirection::YPos:
 			planeNormal = Eigen::Vector3d(0, -1, 0);
 			yEnd = 0;
+#pragma omp parallel for
 			for (int y = 0; y < voxel_grid.GetDimensions().y(); y++) {
 				std::cout << "Sweep y: " << y << "/" << voxel_grid.GetDimensions().y() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, y, y, zStart, zEnd);
@@ -54,6 +63,7 @@ public:
 		case SpaceCarvingDirection::YNeg:
 			planeNormal = Eigen::Vector3d(0, 1, 0);
 			yEnd = 0;
+#pragma omp parallel for
 			for (int y = voxel_grid.GetDimensions().y() - 1; y >= 0; y--) {
 				std::cout << "Sweep y: " << y << "/" << voxel_grid.GetDimensions().y() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, y, y, zStart, zEnd);
@@ -62,6 +72,7 @@ public:
 		case SpaceCarvingDirection::ZPos:
 			planeNormal = Eigen::Vector3d(0, 0 , -1);
 			zEnd = 0;
+#pragma omp parallel for
 			for (int z = 0; z < voxel_grid.GetDimensions().z(); z++) {
 				std::cout << "Sweep z: " << z << "/" << voxel_grid.GetDimensions().z() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, z, z);
@@ -70,6 +81,7 @@ public:
 		case SpaceCarvingDirection::ZNeg:
 			planeNormal = Eigen::Vector3d(0, 0, 1);
 			zEnd = 0;
+#pragma omp parallel for
 			for (int z = voxel_grid.GetDimensions().z() - 1; z >= 0; z--) {
 				std::cout << "Sweep z: " << z << "/" << voxel_grid.GetDimensions().z() << std::endl;
 				removed |= SinglePlaneSweep(voxel_grid, cameras, planeNormal, xStart, xEnd, yStart, yEnd, z, z);
@@ -144,6 +156,7 @@ private:
 	static bool SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
 		bool removed = false;
 		// Peel a single layer
+#pragma omp parallel for collapse(3) reduction(||:removed)
 		for (int x = xStart; x <= xEnd; x++) {
 			for (int y = yStart; y <= yEnd; y++) {
 				for (int z = zStart; z <= zEnd; z++) {
@@ -229,22 +242,23 @@ private:
 		Eigen::Vector3d cp = camera.pose.block<3, 1>(0, 3).cast<double>();
 		//Eigen::Vector3d cr = camera.pose.rotation.cast<double>();
 
-		bool distance = (cp - planePoint).normalized().dot(planeNormal) > 0;
+		bool distance = (cp - planePoint).normalized().dot(planeNormal) > CAMERA_ABOVE_PLANE_THRESHOLD;
 		//bool direction = cr.dot(planeNormal) > 0;
 		//// return distance > 0.0;
 		//return distance && direction;
 
 		return distance;
 	}
-	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras) {
+	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras, bool multiSweep = false) {
 		bool consistent = true;
 		int i = 0;
+		float threshold = multiSweep ? MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE : INCONSISTENCY_THRESHOLD_PERCENTAGE;
 		for (int i = 0; i < pixelsPositions.size(); i++) {
 			Camera c = PixelCameras[i];
 			uchar col = c.grayScaleFrame.at<uchar>(pixelsPositions[i].y(), pixelsPositions[i].x());
 			if (col >= DARK_THRESHOLD) {
 				i++;
-				if (i / (float)(PixelCameras.size()) >= INCONSISTENCY_THRESHOLD_PERCENTAGE)
+				if (i / (float)(PixelCameras.size()) >= threshold)
 					return false;
 			}
 		}
@@ -263,7 +277,7 @@ private:
 				pixelsPositions.push_back(pixelPos);
 
 			}
-			if (!CheckPhotoConsistency(voxel_world_pos, pixelsPositions, voxel.cameras)) {// Step 3b
+			if (!CheckPhotoConsistency(voxel_world_pos, pixelsPositions, voxel.cameras,true)) {// Step 3b
 				voxel_grid.RemoveVoxel(setVoxelPositions[i]);
 				removed = true;
 			}

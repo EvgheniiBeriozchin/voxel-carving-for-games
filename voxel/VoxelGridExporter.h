@@ -16,14 +16,19 @@ public:
         }
 
         // Write the OFF file header
-        file << "OFF" << std::endl;
+        file << "COFF" << std::endl;
         std::vector<Eigen::Vector3i> voxelpositions = voxelGrid.GetBoundaryVoxels();
         std::vector<Eigen::Vector3d> voxels = voxelGrid.GetVoxelCenterPoints(voxelpositions);
+        std::vector<cv::Vec3d> colors;
+        for each (Eigen::Vector3i pos in voxelpositions)
+        {
+            colors.push_back(voxelGrid.GetVoxelColor(pos));
+        }
         file << voxels.size() << " 0 0" << std::endl;
 
         // Write the voxel grid vertices
-        for (const Eigen::Vector3d& position : voxels) {
-            file << position.x() << " " << position.y() << " " << position.z() << std::endl;
+        for (int i = 0; i < voxels.size();i++) {
+            file << voxels[i].x() << " " << voxels[i].y() << " " << voxels[i].z() << " " << colors[i][0] << " " << colors[i][1] << " " << colors[i][2] << " " << 255 << std::endl;
         }
 
         // Write the voxel grid faces

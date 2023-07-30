@@ -398,19 +398,6 @@ int Polygonise(MC_Gridcell grid, double isolevel, MC_Triangle* triangles) {
 	return ntriang;
 }
 
-void CreateMesh(VoxelGrid* grid, SimpleMesh* mesh) {
-	Eigen::Vector3i dim;
-	dim = grid->GetDimensions();
-
-	for (unsigned int i = 0; i < dim[0] - 1; i++) {
-		for (unsigned int j = 0; j < dim[1] - 1; j++) {
-			for (unsigned int h = 0; h < dim[2] - 1; h++) {
-				ProcessVoxelGridCell(grid, i, j, h, 0.00f, mesh);
-			}
-		}
-	}
-}
-
 bool ProcessVoxelGridCell(VoxelGrid* grid, int x, int y, int z, double iso, SimpleMesh* mesh) {
 
 	MC_Gridcell cell;
@@ -432,16 +419,16 @@ bool ProcessVoxelGridCell(VoxelGrid* grid, int x, int y, int z, double iso, Simp
 	cell.p[6] = Eigen::Vector3d(tmp[0], tmp[1], tmp[2]);
 	tmp = grid->IndexToPosition(x + 1, y + 1, z + 1);
 	cell.p[7] = Eigen::Vector3d(tmp[0], tmp[1], tmp[2]);
-
-	cell.val[0] = grid->GetVoxel(cell.p[0]).value;
-	cell.val[1] = grid->GetVoxel(cell.p[1]).value;
-	cell.val[2] = grid->GetVoxel(cell.p[2]).value;
-	cell.val[3] = grid->GetVoxel(cell.p[3]).value;
-	cell.val[4] = grid->GetVoxel(cell.p[4]).value;
-	cell.val[5] = grid->GetVoxel(cell.p[5]).value;
-	cell.val[6] = grid->GetVoxel(cell.p[6]).value;
-	cell.val[7] = grid->GetVoxel(cell.p[7]).value;
-
+	
+	cell.val[0] = grid->GetVoxel(Eigen::Vector3i(x + 1, y, z)).value;
+	cell.val[1] = grid->GetVoxel(Eigen::Vector3i(x, y, z)).value;
+	cell.val[2] = grid->GetVoxel(Eigen::Vector3i(x, y + 1, z)).value;
+	cell.val[3] = grid->GetVoxel(Eigen::Vector3i(x + 1, y + 1, z)).value;
+	cell.val[4] = grid->GetVoxel(Eigen::Vector3i(x + 1, y, z + 1)).value;
+	cell.val[5] = grid->GetVoxel(Eigen::Vector3i(x, y, z + 1)).value;
+	cell.val[6] = grid->GetVoxel(Eigen::Vector3i(x, y + 1, z + 1)).value;
+	cell.val[7] = grid->GetVoxel(Eigen::Vector3i(x + 1, y + 1, z + 1)).value;
+	
 	MC_Triangle tris[5];
 	int ntri = Polygonise(cell, iso, tris);
 
@@ -467,8 +454,21 @@ bool ProcessVoxelGridCell(VoxelGrid* grid, int x, int y, int z, double iso, Simp
 
 		mesh->AddFace(vhandle[0], vhandle[1], vhandle[2]);
 	}
-
+	
 	return true;
+}
+
+void CreateMesh(VoxelGrid* grid, SimpleMesh* mesh) {
+	Eigen::Vector3i dim;
+	dim = grid->GetDimensions();
+
+	for (unsigned int i = 0; i < dim[0] - 1; i++) {
+		for (unsigned int j = 0; j < dim[1] - 1; j++) {
+			for (unsigned int h = 0; h < dim[2] - 1; h++) {
+				ProcessVoxelGridCell(grid, i, j, h, 1.00f, mesh);
+			}
+		}
+	}
 }
 
 #endif // MARCHING_CUBES_H

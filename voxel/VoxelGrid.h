@@ -188,7 +188,7 @@ public:
 		Voxel v = GetVoxel(voxelPosition);
 		for (Camera c : v.cameras) {
 			Eigen::Vector2i cameraPos = c.ProjectIntoCameraSpace(voxelWorldPos);
-			colors.push_back(c.frame.at<cv::Vec3b>(cameraPos.x(), cameraPos.y()));
+			colors.push_back(c.frame.at<cv::Vec3b>(cameraPos.y(), cameraPos.x()));
 		}
 		cv::Vec3i sumColor(0, 0, 0);
 		for (const cv::Vec3b& color : colors) {
@@ -196,6 +196,9 @@ public:
 		}
 
 		int numColors = colors.size();
+		if (numColors == 0)
+			return cv::Vec3b(255, 255, 255);
+    
 		cv::Vec3b averageColor(
 			static_cast<unsigned char>(sumColor[0] / numColors),
 			static_cast<unsigned char>(sumColor[1] / numColors),

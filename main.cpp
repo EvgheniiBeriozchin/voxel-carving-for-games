@@ -1,4 +1,3 @@
-// Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -23,6 +22,7 @@
 #include <igl/edges.h>
 #include <export.h>
 
+
 #define RUN_CAMERA_CALIBRATION 1
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
@@ -37,7 +37,6 @@ const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 //const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../bunny.off";
-
 
 int main() {
 	cv::Mat cameraMatrix, distanceCoefficients;
@@ -248,9 +247,8 @@ int main() {
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
-	}
 
-	if (RUN_UV_TEST) {
+		if (RUN_UV_TEST) {
 		// Load input meshes
 		Eigen::MatrixXd V, U, N;
 		Eigen::MatrixXi F;
@@ -266,6 +264,7 @@ int main() {
 
 		MeshExport::RenderTexture("beetleOut", U, F, colors);
 	}
-
+	}
+	
 	return 0;
 }
