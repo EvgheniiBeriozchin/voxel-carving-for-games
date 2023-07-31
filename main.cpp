@@ -261,39 +261,28 @@ int main() {
 		SimpleMesh mesh;
 		CreateMesh(&enclosedGrid, &mesh);
 		std::cout << "Mesh created" << std::endl;
-		std::cout << "Vertices: " << mesh.GetVertices().size() << std::endl;
-		std::cout << "Faces: " << mesh.GetTriangles().size() << std::endl;
 
 
-		if (EXPORT_TEXTURED_MESH) {
-			// Load input meshes
-			Eigen::MatrixXd V, U, N;
-			Eigen::MatrixXi F, C;
+		// Load input meshes
+		Eigen::MatrixXd V, U, N;
+		Eigen::MatrixXi F, C;
 
-			mesh.GetMeshData(V, F, C);
+		mesh.GetMeshData(V, F, C);
 
-			// Debug
-			// igl::read_triangle_mesh(uvTestingInput, V, F);
 
-			// Compute UV mapping
-			std::cout << "Computing UV mapping" << std::endl;
-			TutteEmbedder::GenerateUvMapping(V, F, U, N);
-			std::cout << "UV mapping computed" << std::endl;
+		// Compute UV mapping
+		std::cout << "Computing UV mapping" << std::endl;
+		TutteEmbedder::GenerateUvMapping(V, F, U, N);
+		std::cout << "UV mapping computed" << std::endl;
 
-			//C is in [0,255] rgb, export and render need [0,1] rgb
-			//Eigen::MatrixXd colors = C.cast<double>() / 255.0;
+	
+		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-			Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
-			colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
+		MeshExport::WriteObj("mesh", V, F, U, N, colors);
 
-			MeshExport::WriteObj("mesh", V, F, U, N, colors);
+		MeshExport::RenderTexture("mesh", U, F, colors);
 
-			MeshExport::RenderTexture("mesh", U, F, colors);
-
-			return 0;
-		}
-
-		mesh.WriteMesh("mesh.off");
 	}
 
 	if (RUN_TUTTE_EMBEDDING_TEST) {
