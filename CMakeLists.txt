@@ -16,9 +16,7 @@ set(OpenCV_DIR ${LIBRARY_DIR}/opencv-build/cmake CACHE PATH "Path to installed O
 find_package(Eigen3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenCV REQUIRED)
-
-# Libigl
-include(libigl)
+find_package(CGAL REQUIRED)
 
 include_directories(
 	external/glfw-3.1.2/include/
@@ -64,14 +62,14 @@ set(EXPORT_FILES
 	export.cpp
 )
 
-add_executable(voxel-carving ${UTILS} ${HEADER_FILES} ${EXPORT_FILES} main.cpp)
+add_executable(voxel-carving ${UTILS} ${HEADER_FILES} main.cpp export.cpp)
 
 target_include_directories(voxel-carving PUBLIC ${EIGEN3_INCLUDE_DIR})
 target_include_directories(voxel-carving PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(voxel-carving Eigen3::Eigen)
-target_link_libraries(voxel-carving igl::core)
 target_link_libraries(voxel-carving ${OpenCV_LIBS})
 target_link_libraries(voxel-carving ${ALL_LIBS})
+target_link_libraries(voxel-carving CGAL::CGAL)
 
 if(WIN32)
     target_compile_definitions(voxel-carving PUBLIC NOMINMAX _USE_MATH_DEFINES)

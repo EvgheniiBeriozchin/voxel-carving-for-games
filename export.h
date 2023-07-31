@@ -1,6 +1,29 @@
+
 #pragma once
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+// Include GLEW
 #include <GL/glew.h>
+
+// Include GLFW
+#include <GLFW/glfw3.h>
+GLFWwindow* window;
+
+// Include GLM
+#include <glm/glm.hpp>
+
 #include <Eigen/Core>
+#include <TutteEmbedding.h>
+
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+#endif // !STB_IMAGE_WRITE_IMPLEMENTATION
 
 
 namespace MeshExport {
