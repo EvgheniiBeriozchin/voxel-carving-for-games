@@ -23,12 +23,17 @@
 #include <export.h>
 
 
+#include <voxel/SimpleMesh.h>
+#include <voxel/MarchingCubes.h>
+
+
 #define RUN_CAMERA_CALIBRATION 1
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_UV_TEST 1
+#define RUN_TUTTE_EMBEDDING_TEST 0
+#define EXPORT_TEXTURED_MESH 1
 
 
 const int NUM_PROCESSED_FRAMES = 25;
@@ -91,7 +96,7 @@ int main() {
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 	}
 
-	if (RUN_VOXEL_CARVING) 
+	if (RUN_VOXEL_CARVING)
 	{
 		if (!videoExists(reconstructionVideo))
 		{
@@ -152,7 +157,7 @@ int main() {
 			ci++;
 			points.push_back(std::vector<Eigen::Vector3d>());
 			colors.push_back(Eigen::Vector3d(255, 0, 0));
-			for (int i = -100; i < 100; i+=2) {
+			for (int i = -100; i < 100; i += 2) {
 				points[ci].push_back(0.01 * Eigen::Vector3d(i, 0, 0));
 			}
 			// y axis
@@ -205,7 +210,7 @@ int main() {
 			Eigen::Vector2i projection = cameraFrames[i].ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
 			if (projection.x() >= 0 && projection.x() < cameraFrames[i].frame.size().width
 				&& projection.y() >= 0 && projection.y() < cameraFrames[i].frame.size().height)
-			{ 
+			{
 				count++;
 				std::cout << "World center location: " << projection << std::endl;
 			}
@@ -215,8 +220,8 @@ int main() {
 		// write image with projected grid positions
 		cv::Mat tf;
 		int index = 0;
-		
-		for (/*auto cameraFrame: cameraFrames*/int i=0;i<1;i++)
+
+		for (/*auto cameraFrame: cameraFrames*/int i = 0; i < 1; i++)
 		{
 			//if (index > 10)
 			//	break;
@@ -228,7 +233,7 @@ int main() {
 				auto pixelPos = cameraFrame.ProjectIntoCameraSpace(v2);
 				if (pixelPos.x() >= tf.cols || pixelPos.y() >= tf.rows || pixelPos.x() < 0 || pixelPos.y() < 0)
 					continue;
-				cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255),5);
+				cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255), 5);
 			}
 			auto pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
 			//std::cout << "00 pixel: " << pixelPos << std::endl;
@@ -248,7 +253,39 @@ int main() {
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 
-		if (RUN_UV_TEST) {
+
+		std::cout << "Creating zero enclosed voxel grid" << std::endl;
+		VoxelGrid enclosedGrid = VoxelGrid::GetZeroEnclosedVoxelGrid(grid);
+
+		std::cout << "Creating Mesh" << std::endl;
+		SimpleMesh mesh;
+		CreateMesh(&enclosedGrid, &mesh);
+		std::cout << "Mesh created" << std::endl;
+
+
+		// Load input meshes
+		Eigen::MatrixXd V, U, N;
+		Eigen::MatrixXi F, C;
+
+		mesh.GetMeshData(V, F, C);
+
+
+		// Compute UV mapping
+		std::cout << "Computing UV mapping" << std::endl;
+		TutteEmbedder::GenerateUvMapping(V, F, U, N);
+		std::cout << "UV mapping computed" << std::endl;
+
+	
+		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
+
+		MeshExport::WriteObj("mesh", V, F, U, N, colors);
+
+		MeshExport::RenderTexture("mesh", U, F, colors);
+
+	}
+
+	if (RUN_TUTTE_EMBEDDING_TEST) {
 		// Load input meshes
 		Eigen::MatrixXd V, U, N;
 		Eigen::MatrixXi F;
@@ -260,11 +297,10 @@ int main() {
 		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
 		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-		MeshExport::WriteObj("beetleOut", V, F, U, N, colors);
+		MeshExport::WriteObj("mesh", V, F, U, N, colors);
 
-		MeshExport::RenderTexture("beetleOut", U, F, colors);
+		MeshExport::RenderTexture("mesh", U, F, colors);
 	}
-	}
-	
+
 	return 0;
 }
