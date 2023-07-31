@@ -57,6 +57,7 @@ set(HEADER_FILES
 	voxel/MarchingCubes.h
 	stb_image_write.h
 	TutteEmbedding.h
+	MeshSmoothing.h
 	export.h
 )
 

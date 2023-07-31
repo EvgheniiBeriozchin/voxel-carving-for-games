@@ -82,7 +82,11 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 	cv::Mat localCameraMatrix, localDistortionCoefficients;
 	std::vector<cv::Mat> rvecs, tvecs;
-	int calibrationFlags = 0;
+	int calibrationFlags = cv::CALIB_USE_INTRINSIC_GUESS;
+	float cm_f[9] = { 1823.3715871387003, 0, 540,
+					  0, 1823.3715871387003, 960,
+					  0, 0, 1 };
+	localCameraMatrix = cv::Mat(3, 3, CV_32F, cm_f);
 	double repError = cv::calibrateCamera(
 		allObjectPoints, allImagePoints, imageSize,
 		localCameraMatrix, localDistortionCoefficients, rvecs, tvecs, cv::noArray(),

@@ -41,6 +41,10 @@ public:
 		m_triangles.clear();
 	}
 
+	void SetVertices(std::vector<Vertex> vertices) {
+		m_vertices = vertices;
+	}
+
 	unsigned int AddVertex(Vertex& vertex)
 	{
 		unsigned int vId = (unsigned int)m_vertices.size();
