@@ -36,7 +36,9 @@
 #define EXPORT_TEXTURED_MESH 1
 
 
-const int NUM_PROCESSED_FRAMES = 25;
+int NUM_PROCESSED_FRAMES = 25;
+float SIZE_Z = 10;
+int VOXEL_BY_CM = 2;
 const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 //const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
@@ -97,6 +99,17 @@ SpaceCarvingAttributes SetupCarvingParameter(std::map<std::string, std::string> 
 int main(int argc, char* argv[]) {
 	std::map<std::string, std::string> params = parseArguments(argc, argv);
 	SpaceCarvingAttributes spaceCarvingAttr = SetupCarvingParameter(params);
+
+	if (params.count("num-processed-frames") > 0) {
+		NUM_PROCESSED_FRAMES = std::stof(params["num-processed-frames"]);
+	}
+	if (params.count("height") > 0) {
+		SIZE_Z = std::stof(params["height"]);
+	}
+	if (params.count("voxels-by-cm") > 0) {
+		VOXEL_BY_CM = std::stof(params["voxels-by-cm"]);
+	}
+
 
 	cv::Mat cameraMatrix, distanceCoefficients;
 	cv::VideoCapture calibrationVideo(CALIBRATION_VIDEO_NAME), reconstructionVideo(RECONSTRUCTION_VIDEO_NAME);
@@ -166,10 +179,10 @@ int main(int argc, char* argv[]) {
 		// Real dimension cm
 		double xSizeCM = 14;
 		double ySizeCM = 21.5;
-		double zSizeCM = 10;
+		double zSizeCM = SIZE_Z;
 		// VoxelDimension
 
-		double voxelPerCM = 2;
+		double voxelPerCM = VOXEL_BY_CM;
 		double xSizeVX = xSizeCM * voxelPerCM;
 		double ySizeVX = ySizeCM * voxelPerCM;
 		double zSizeVX = zSizeCM * voxelPerCM;
