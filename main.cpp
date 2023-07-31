@@ -11,6 +11,11 @@
 #include "utils/utils.h"
 #include "TutteEmbedding.h"
 
+#include "voxel/MarchingCubes.h"
+#include "voxel/SimpleMesh.h"
+#include "MeshSmoothing.h"
+#include <algorithm>
+
 #include <string>
 #include <igl/read_triangle_mesh.h>
 #include <igl/per_vertex_normals.h>
@@ -27,11 +32,12 @@
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
 #define RUN_VOXEL_CARVING 1
-#define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_UV_TEST 1
+#define RUN_CAMERA_ESTIMATION_EXPORT 1
+#define RUN_MESH_GENERATION 1
+#define RUN_UV_TEST 0
 
 
-const int NUM_PROCESSED_FRAMES = 25;
+const int NUM_PROCESSED_FRAMES = 20;
 const std::string CALIBRATION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 //const std::string RECONSTRUCTION_VIDEO_NAME = "../Box_NaturalLight.mp4";
@@ -216,11 +222,10 @@ int main() {
 		cv::Mat tf;
 		int index = 0;
 		
-		for (/*auto cameraFrame: cameraFrames*/int i=0;i<1;i++)
+		for (auto cameraFrame: cameraFrames)
 		{
-			//if (index > 10)
-			//	break;
-			auto cameraFrame = cameraFrames[i];
+			if (index > 10)
+				break;
 			cameraFrame.frame.copyTo(tf);
 			for each (auto v in grid.GetBoundaryVoxels())
 			{
@@ -248,22 +253,73 @@ int main() {
 		SpaceCarver::MultiSweep(grid, cameraFrames);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 
+		if (RUN_MESH_GENERATION)
+		{
+			SimpleMesh mesh;
+			CreateMesh(&grid, &mesh);
+			std::vector<Eigen::Vector3d> vertices = mesh.GetVertices();
+			std::vector<std::vector<int>> edges;
+			for (int i = 0; i < vertices.size(); i++)
+			{
+				edges.push_back(std::vector<int>());
+			}
+			//std::cout << "vertices.size(): " << vertices.size() << std::endl;
+			for (auto triangle : mesh.GetTriangles())
+			{
+				//std::cout << "triangle.idx0: " << triangle.idx0 << std::endl;
+				//std::cout << "triangle.idx1: " << triangle.idx1 << std::endl;
+				//std::cout << "triangle.idx2: " << triangle.idx2 << std::endl;
+				edges[triangle.idx0].push_back(triangle.idx1);
+				edges[triangle.idx0].push_back(triangle.idx2);
+
+				edges[triangle.idx1].push_back(triangle.idx0);
+				edges[triangle.idx1].push_back(triangle.idx2);
+
+				edges[triangle.idx2].push_back(triangle.idx0);
+				edges[triangle.idx2].push_back(triangle.idx1);
+			}
+			for (int i = 0; i < edges.size(); i++)
+			{
+				std::sort(edges[i].begin(), edges[i].end());
+				/*std::cout << "edges[" << i << "]: ";
+				for (int j = 0; j < edges[i].size(); j++)
+				{
+					std::cout << edges[i][j] << std::endl;
+				}
+				std::cout << std::endl;*/
+			}
+
+			std::vector<Eigen::Vector3d> vertices2;
+			std::vector<std::vector<int>> edges2;
+			for (int i = 0; i < 1000; i++)
+			{
+				vertices2[i] = vertices[i];
+				edges2.push_back(edges[i]);
+			}
+
+			std::vector<Eigen::Vector3d> result = implicit_laplacian_smoothing(
+				vertices2, edges2, 2, 100.0f);
+
+			mesh.SetVertices(result);
+			mesh.WriteMesh("mesh3.off");
+		}
+
 		if (RUN_UV_TEST) {
 		// Load input meshes
-		Eigen::MatrixXd V, U, N;
-		Eigen::MatrixXi F;
+			Eigen::MatrixXd V, U, N;
+			Eigen::MatrixXi F;
 
-		igl::read_triangle_mesh(uvTestingInput, V, F);
+			igl::read_triangle_mesh(uvTestingInput, V, F);
 
-		TutteEmbedder::GenerateUvMapping(V, F, U, N);
+			TutteEmbedder::GenerateUvMapping(V, F, U, N);
 
-		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
-		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
+			Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+			colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-		MeshExport::WriteObj("beetleOut", V, F, U, N, colors);
+			MeshExport::WriteObj("beetleOut", V, F, U, N, colors);
 
-		MeshExport::RenderTexture("beetleOut", U, F, colors);
-	}
+			MeshExport::RenderTexture("beetleOut", U, F, colors);
+		}
 	}
 	
 	return 0;
