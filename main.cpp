@@ -43,7 +43,61 @@ const std::string RECONSTRUCTION_VIDEO_NAME = "../PepperMill_NaturalLight.mp4";
 const std::string voxeTestFilenameTarget = std::string("voxelGrid.off");
 const std::string uvTestingInput = "../bunny.off";
 
-int main() {
+
+// Function to parse command-line arguments and store them in a parameter map
+std::map<std::string, std::string> parseArguments(int argc, char* argv[]) {
+	std::map<std::string, std::string> parameters;
+
+	for (int i = 1; i < argc; ++i) {
+		std::string arg = argv[i];
+		std::string key, value;
+
+		// Assuming the format of arguments is "-key=value"
+		size_t equalSignPos = arg.find('=');
+		if (equalSignPos != std::string::npos) {
+			key = arg.substr(1, equalSignPos-1);
+			value = arg.substr(equalSignPos + 1);
+			parameters[key] = value;
+		}
+	}
+
+	return parameters;
+}
+
+SpaceCarvingAttributes SetupCarvingParameter(std::map<std::string, std::string> params) {
+	SpaceCarvingAttributes attr = SpaceCarvingAttributes();
+	attr.DARK_THRESHOLD = 150;
+	attr.INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
+	attr.MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
+	attr.CAMERA_ABOVE_PLANE_THRESHOLD = 0;
+
+	if (params.count("dark-threshold") > 0) {
+		size_t dark;
+		dark = std::stof(params["dark-threshold"]);
+		attr.DARK_THRESHOLD = dark;
+	}
+	if (params.count("inconsistency-threshold") > 0) {
+		float it;
+		it = std::stof(params["inconsistency-threshold"]);
+		attr.INCONSISTENCY_THRESHOLD_PERCENTAGE = it;
+	}
+	if (params.count("multi-sweep-inconsistency-threshold") > 0) {
+		float it;
+		it = std::stof(params["multi-sweep-inconsistency-threshold"]);
+		attr.MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = it;
+	}
+	if (params.count("camera-above-plane-threshold") > 0) {
+		float it;
+		it = std::stof(params["multi-sweep-inconsistency-threshold"]);
+		attr.CAMERA_ABOVE_PLANE_THRESHOLD = it;
+	}
+	return attr;
+}
+
+int main(int argc, char* argv[]) {
+	std::map<std::string, std::string> params = parseArguments(argc, argv);
+	SpaceCarvingAttributes spaceCarvingAttr = SetupCarvingParameter(params);
+
 	cv::Mat cameraMatrix, distanceCoefficients;
 	cv::VideoCapture calibrationVideo(CALIBRATION_VIDEO_NAME), reconstructionVideo(RECONSTRUCTION_VIDEO_NAME);
 	cv::aruco::ArucoDetector detector = createDetector();
@@ -250,7 +304,8 @@ int main() {
 			cv::imwrite("camera_" + std::to_string(index++) + "_gray.png", tf);
 		}
 		std::cout << "Running voxel carving" << std::endl;
-		SpaceCarver::MultiSweep(grid, cameraFrames);
+		SpaceCarver sc = SpaceCarver();
+		sc.MultiSweep(grid, cameraFrames, spaceCarvingAttr);
 		VoxelGridExporter::ExportToOFF(voxeTestFilenameTarget, grid);
 
 
