@@ -34,8 +34,8 @@ In cmake gui the following builds the program
 
 ## How to setup the Voxel Grid
 We assume a ArUco board size of 14cm * 21,5cm.  
-- zSizeCM: Set the height of the voxel grid. Default 10
-- voxelPerCM: Set the number of voxels by cm. (2,3,4... higher values can lead to very long execution times but improve accuracy and quality) Default 2
+- height: Set the height of the voxel grid. Default 10
+- voxels-by-cm: Set the number of voxels by cm. (2,3,4... higher values can lead to very long execution times but improve accuracy and quality) Default 2
 
 ## How to run Voxel Carving
   
