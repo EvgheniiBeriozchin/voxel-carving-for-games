@@ -56,7 +56,7 @@ GLFWwindow* window;
 #include <boost/foreach.hpp>
 
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel           Kernel;
+typedef CGAL::Simple_cartesian<double>           Kernel;
 typedef Kernel::Point_2                         Point_2;
 typedef Kernel::Point_3                         Point_3;
 typedef CGAL::Surface_mesh<Kernel::Point_3>     SurfaceMesh;
@@ -71,13 +71,13 @@ typedef Kernel::Vector_3                                               Vector;
 typedef Kernel::Compare_dihedral_angle_3                    Compare_dihedral_angle_3;
 
 
-#define RUN_CAMERA_CALIBRATION 0
+#define RUN_CAMERA_CALIBRATION 1
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
-#define RUN_VOXEL_CARVING 0
+#define RUN_VOXEL_CARVING 1
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_TUTTE_EMBEDDING_TEST 1
-#define EXPORT_TEXTURED_MESH 0
+#define RUN_TUTTE_EMBEDDING_TEST 0
+#define EXPORT_TEXTURED_MESH 1
 
 
 const int NUM_PROCESSED_FRAMES = 25;
@@ -693,23 +693,30 @@ int main() {
 			std::cout << "Creating CGAL mesh" << std::endl;
 			SurfaceMesh sm;
 
+			
+
+			SurfaceMesh::Property_map<vertex_descriptor, unsigned int> indexMap = sm.add_property_map<vertex_descriptor, unsigned int>("v:index", -1).first;
+
+
 			//Load vertices, faces and colors into CGAL mesh
 			for (unsigned int i = 0; i < m_vertices.size(); i++)
 			{
 				Point_3 p(m_vertices[i].x(), m_vertices[i].y(), m_vertices[i].z());
-				sm.add_vertex(p);
+				SurfaceMesh::vertex_index face_index = sm.add_vertex(p);
+				indexMap[face_index] = i;
 			}
 
-			
+
+
+			//face index map
 
 			for (unsigned int i = 0; i < m_triangles.size(); i++)
 			{
-				sm.add_face(
+				SurfaceMesh::face_index face_index = sm.add_face(
 					SurfaceMesh::Vertex_index(m_triangles[i].idx0),
 					SurfaceMesh::Vertex_index(m_triangles[i].idx1),
 					SurfaceMesh::Vertex_index(m_triangles[i].idx2));
 			}
-
 			
 
 			//Add color property
@@ -726,30 +733,26 @@ int main() {
 			std::cout << "CGAL mesh created" << std::endl;
 
 			std::cout << "Duplicating non-manifold vertices" << std::endl;
-
-			std::vector<std::vector<vertex_descriptor> > duplicated_vertices;
 			
+			std::cout << "Vertices before: " << sm.number_of_vertices() << std::endl;
+			CGAL::Polygon_mesh_processing::duplicate_non_manifold_vertices(sm);
 
-			std::size_t new_vertices_nb = CGAL::Polygon_mesh_processing::duplicate_non_manifold_vertices(sm,
-				CGAL::parameters::output_iterator(
-					std::back_inserter(duplicated_vertices)));
-
-
-			std::cout << "Duplicated " << new_vertices_nb << " non-manifold vertices" << std::endl;
+			std::cout << "Vertices after: " << sm.number_of_vertices() << std::endl;
 
 			// Remove degenerate faces
+;
+
+			//int removed = CGAL::Polygon_mesh_processing::keep_largest_connected_components(sm, 1, fi);
+
+			std::cout << "Vertices after removing components: " << sm.number_of_vertices() << std::endl;
 
 			std::cout << "Removing degenerate faces" << std::endl;
 
 			CGAL::Polygon_mesh_processing::remove_almost_degenerate_faces(sm);
 
+			std::cout << "Vertices after removing degernate faces: " << sm.number_of_vertices() << std::endl;
+
 			std::cout << "Removed degenerate faces" << std::endl;
-
-			
-
-			int removed = CGAL::Polygon_mesh_processing::keep_largest_connected_components(sm,2);
-
-			std::cout << "Removed " << removed << " components" << std::endl;
 
 			halfedge_descriptor bhd = CGAL::Polygon_mesh_processing::longest_border(sm).first;
 
@@ -778,22 +781,42 @@ int main() {
 			F.resize(sm.number_of_faces(), 3);
 
 			int i = 0;
-			for (auto v : sm.vertices()) {
-				auto p = sm.point(v);
+			for (SurfaceMesh::Vertex_index v : sm.vertices()) {
+				Point_3 p = sm.point(v);
 				V.row(i) = Eigen::Vector3d(p.x(), p.y(), p.z());
 				i++;
 			}
 
-			/*
-			for (SurfaceMesh::Face_index f : sm.faces()) {
-				CGAL::Vertex_around_face_circulator<SurfaceMesh> vcirc(sm.halfedge(f), sm), done(vcirc);
-				//get the next three vertices and store them in the face matrix
-				F(f.idx(), 0) = vcirc->idx(); ++vcirc;
-				F(f.idx(), 1) = vcirc->idx(); ++vcirc;
-				F(f.idx(), 2) = vcirc->idx();
-			}
-			*/
 			F.resize(sm.number_of_faces(), 3);
+			i = 0;
+			
+			for (SurfaceMesh::Face_index f : sm.faces()) {
+				SurfaceMesh::Halfedge_index hf = sm.halfedge(f);
+
+				std::vector<SurfaceMesh::Vertex_index> face_vertices;
+				for (SurfaceMesh::Halfedge_index hi : CGAL::halfedges_around_face(hf, sm)) {
+					SurfaceMesh::Vertex_index vi = sm.target(hi);
+					face_vertices.push_back(vi);
+				}
+
+				bool addFace = true;
+				//check if any vertex indices are larger than the number of vertices
+				for (int i = 0; i < 3; i++) {
+					if (face_vertices[i] >= sm.number_of_vertices()) {
+						std::cout << "Vertex index " << face_vertices[i] << " is larger than the number of vertices " << sm.number_of_vertices() << std::endl;
+						addFace = false;
+					}
+				}
+
+				if (!addFace) {
+					continue;
+				}
+				F.row(i) = Eigen::Vector3i(face_vertices[0], face_vertices[1], face_vertices[2]);
+				i++;
+			}
+			
+			
+			/*
 			std::vector<unsigned>* faces = new std::vector<unsigned>[sm.number_of_faces()];
 			std::cout << "Iterate over faces\n";
 			{
@@ -810,7 +833,7 @@ int main() {
 
 				}
 			}
-
+			*/
 			
 
 			U.resize(sm.number_of_vertices(), 2);

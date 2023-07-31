@@ -24,35 +24,6 @@ struct Triangle
 	{}
 };
 
-
-struct Position {
-	double x;
-	double y;
-	double z;
-
-	Position(double _x, double _y, double _z) :
-		x(_x), y(_y), z(_z)
-	{}
-
-	Position() :
-		x(0), y(0), z(0)
-	{}
-
-	bool operator<(const Position& other) const {
-		if (x < other.x) return true;
-		if (x > other.x) return false;
-		if (y < other.y) return true;
-		if (y > other.y) return false;
-		if (z < other.z) return true;
-		if (z > other.z) return false;
-		return false;
-	}
-
-	bool operator==(const Position& other) const {
-		return x == other.x && y == other.y && z == other.z;
-	}
-};
-
 class SimpleMesh
 {
 public:
@@ -103,9 +74,10 @@ public:
 
 	void DeduplicateVertices() {
 		//Create map from position to vertice ids with that position
-		std::map<Position, std::vector<unsigned int>> positionToVertices;
+		std::map<std::vector<double>, std::vector<unsigned int>> positionToVertices;
 		for (unsigned int i = 0; i < m_vertices.size(); i++) {
-			Position p(m_vertices[i][0], m_vertices[i][1], m_vertices[i][2]);
+			//Position p(m_vertices[i][0], m_vertices[i][1], m_vertices[i][2]);
+			std::vector<double> p = { m_vertices[i][0], m_vertices[i][1], m_vertices[i][2] };
 			positionToVertices[p].push_back(i);
 		}
 
@@ -117,12 +89,12 @@ public:
 
 		std::map<int, int> oldToNewVertexIndex;
 
-		for (std::map<Position, std::vector<unsigned int>>::iterator it = positionToVertices.begin(); it != positionToVertices.end(); ++it) {
+		for (std::map<std::vector<double>, std::vector<unsigned int>>::iterator it = positionToVertices.begin(); it != positionToVertices.end(); ++it) {
 			auto position = it->first;
 			auto vertices = it->second;
 
 			//Create new vertex
-			Vertex newVertex(position.x, position.y, position.z);
+			Vertex newVertex(position[0], position[1], position[2]);
 			newVertices.push_back(newVertex);
 
 			//Create new color
@@ -152,7 +124,10 @@ public:
 			int newIdx2 = oldToNewVertexIndex[idx2];
 
 
-
+			if (newIdx0 > newVertices.size() || newIdx1 > newVertices.size() || newIdx2 > newVertices.size()) {
+				std::cout << "New Triangle with invalid indices" << std::endl;
+			}
+				
 
 
 			if( newIdx0 == newIdx1 || newIdx0 == newIdx2 || newIdx1 == newIdx2)
