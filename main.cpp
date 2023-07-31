@@ -71,13 +71,13 @@ typedef Kernel::Vector_3                                               Vector;
 typedef Kernel::Compare_dihedral_angle_3                    Compare_dihedral_angle_3;
 
 
-#define RUN_CAMERA_CALIBRATION 1
+#define RUN_CAMERA_CALIBRATION 0
 #define RUN_POSE_ESTIMATION_TEST 0
 #define RUN_VOXEL_GRID_TEST 0
-#define RUN_VOXEL_CARVING 1
+#define RUN_VOXEL_CARVING 0
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
-#define RUN_TUTTE_EMBEDDING_TEST 0
-#define EXPORT_TEXTURED_MESH 1
+#define RUN_TUTTE_EMBEDDING_TEST 1
+#define EXPORT_TEXTURED_MESH 0
 
 
 const int NUM_PROCESSED_FRAMES = 25;
@@ -907,16 +907,33 @@ int main() {
 		CGAL::Polygon_mesh_processing::compute_vertex_normals(sm, vnormals);
 
 
+		Eigen::MatrixXd colors;
 		
 		//Copy V, F, and U from sm
 		V.resize(sm.number_of_vertices(), 3);
 		F.resize(sm.number_of_faces(), 3);
+		colors.resize(sm.number_of_vertices(), 3);
 
+		double yMin = std::numeric_limits<double>::max();
+		double yMax = std::numeric_limits<double>::min();
 		int i = 0;
 		for (auto v : sm.vertices()) {
 			auto p = sm.point(v);
 			V.row(i) = Eigen::Vector3d(p.x(), p.y(), p.z());
+			if (p.y() < yMin)
+				yMin = p.y();
+			if (p.y() > yMax)
+				yMax = p.y();
 			i++;
+		}
+
+		//Assign colors based on y value
+		for (int i = 0; i < sm.number_of_vertices(); i++) {
+			double y = V(i, 1);
+			double t = (y - yMin) / (yMax - yMin);
+			colors(i, 0) = 1;
+			colors(i, 1) = t;
+			colors(i, 2) = 1;
 		}
 
 		for (SurfaceMesh::Face_index f : sm.faces()) {
@@ -949,8 +966,8 @@ int main() {
 			v++;
 		}
 
-		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
-		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
+		// Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
+		// colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
 		WriteObj("mesh", V, F, U, N, colors);
 
