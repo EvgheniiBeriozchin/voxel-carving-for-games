@@ -116,7 +116,7 @@ public:
 		
 		while (!terminate)// continue unit no change
 		{
-			PrintProjectedGrid(voxel_grid, cameras, "../carving_video/" + std::to_string(imgidx++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "../carving_video/" + std::to_string(imgidx++) + ".png");
 			bool change = false;
 			// Step 2
 			std::cout << "Carving XPos direction..." << std::endl;
