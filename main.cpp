@@ -256,8 +256,11 @@ int main(int argc, char* argv[]) {
 			}
 
 			VoxelGridExporter::ExportToPLY("cameraPoses.ply", points, colors);
-			VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
+			// VoxelGridExporter::ExportToOFF("voxelGrid_cameraPoses.off", grid);
 		}
+
+		/*DEBUGGING CODE*/
+		/*
 		int count = 0;
 		for (int i = 0; i < cameraFrames.size(); i++)
 		{
@@ -270,16 +273,18 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		std::cout << "Center points within frame: " << count << std::endl;
+		*/
 
 		// write image with projected grid positions
 		cv::Mat tf;
 		int index = 0;
 
-		for (/*auto cameraFrame: cameraFrames*/int i = 0; i < 1; i++)
+		/* DEBUGGING CODE */
+		/*
+		for (auto cameraFrame: cameraFrames)
 		{
-			//if (index > 10)
-			//	break;
-			auto cameraFrame = cameraFrames[i];
+			if (index > 0)
+				break;
 			cameraFrame.frame.copyTo(tf);
 			for each (auto v in grid.GetBoundaryVoxels())
 			{
@@ -290,19 +295,16 @@ int main(int argc, char* argv[]) {
 				cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255), 5);
 			}
 			auto pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0));
-			//std::cout << "00 pixel: " << pixelPos << std::endl;
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 255, 0), 5);
-			//std::cout << "010 pixel: " << pixelPos << std::endl;
 			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0.1, 0, 0));
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 0, 255), 5);
-			//std::cout << "001 pixel: " << pixelPos << std::endl;
 			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0.1, 0));
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(0, 255, 0), 5);
-			//std::cout << "0101 pixel: " << pixelPos << std::endl;
 			pixelPos = cameraFrame.ProjectIntoCameraSpace(Eigen::Vector3d(0, 0, 0.1));
 			cv::circle(tf, cv::Point(pixelPos.x(), pixelPos.y()), 5, cv::Vec3b(255, 0, 0), 5);
 			cv::imwrite("camera_" + std::to_string(index++) + "_gray.png", tf);
 		}
+		*/
 		std::cout << "Running voxel carving" << std::endl;
 		SpaceCarver sc = SpaceCarver();
 		sc.MultiSweep(grid, cameraFrames, spaceCarvingAttr);

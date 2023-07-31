@@ -138,31 +138,31 @@ public:
 			// Step 2
 			std::cout << "Carving XPos direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XPos);
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved XPos direction" << std::endl;
 			std::cout << "Carving XNeg direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::XNeg);
 			i++;
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved XNeg direction" << std::endl;
 			std::cout << "Carving YPos direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YPos);
 			i++;
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved YPos direction" << std::endl;
 			std::cout << "Carving YNeg direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::YNeg);
 			i++;
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved YNeg direction" << std::endl;
 			std::cout << "Carving ZPos direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZPos);
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved ZPos direction" << std::endl;
 			std::cout << "Carving ZNeg direction..." << std::endl;
 			change |= PlaneSweep(voxel_grid, cameras, SpaceCarvingDirection::ZNeg);
-			VoxelGridExporter::ExportToOFF("voxelGridCarving_iter_" + std::to_string(i) + ".off", voxel_grid);
-			PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
+			//VoxelGridExporter::ExportToOFF("voxelGridCarving_iter_" + std::to_string(i) + ".off", voxel_grid);
+			//PrintProjectedGrid(voxel_grid, cameras, "voxelGridCarving_iter_" + std::to_string(i++) + ".png");
 			std::cout << "Carved ZNeg direction" << std::endl;
 			// Step 3
 			change |= MultiSweepConsistency(voxel_grid, cameras);
