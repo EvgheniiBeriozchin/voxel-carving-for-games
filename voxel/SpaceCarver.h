@@ -17,7 +17,6 @@ const float CAMERA_ABOVE_PLANE_THRESHOLD = 0;
 class SpaceCarver {
 public:
 	enum SpaceCarvingDirection { XPos, XNeg, YPos, YNeg, ZPos, ZNeg };
-
 	static bool PlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, SpaceCarvingDirection direction) {
 		Eigen::Vector3d planeNormal;
 		bool removed = false;
@@ -94,6 +93,7 @@ public:
 	}
 
 	static void PrintProjectedGrid(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, std::string filename) {
+		return;
 		cv::Mat tf;
 		cameras[0].frame.copyTo(tf);
 		for each (auto v in voxel_grid.GetBoundaryVoxels())
@@ -113,8 +113,10 @@ public:
 		int i = 0;
 		auto c = cameras;
 		bool terminate = false;
+		
 		while (!terminate)// continue unit no change
 		{
+			PrintProjectedGrid(voxel_grid, cameras, "../carving_video/" + std::to_string(imgidx++) + ".png");
 			bool change = false;
 			// Step 2
 			std::cout << "Carving XPos direction..." << std::endl;
@@ -202,25 +204,47 @@ private:
 	}
 	static bool IsSurfaceVoxel(VoxelGrid& voxel_grid, Eigen::Vector3i voxel_pos) {
 		auto dims = voxel_grid.GetDimensions();
-		for (int dx = -1; dx <= 1; ++dx) {
-			for (int dy = -1; dy <= 1; ++dy) {
-				for (int dz = -1; dz <= 1; ++dz) {
-					if (dx == 0 && dy == 0 && dz == 0)
-						continue;
-					const Eigen::Vector3i neighborPosition = voxel_pos + Eigen::Vector3i(dx, dy, dz);
-					if (neighborPosition.x() < 0 || neighborPosition.x() >= dims.x() ||
-						neighborPosition.y() < 0 || neighborPosition.y() >= dims.y() ||
-						neighborPosition.z() < 0 || neighborPosition.z() >= dims.z())
-					{
-						return true;	// voxel_grid boundary is always surface
-					}
-					const Voxel& neighbor = voxel_grid.GetVoxel(neighborPosition);
-					if (neighbor.value == 0) {// a neighbor is not set => is on surface
-						return true;
-					}
-				}
+		std::vector<Eigen::Vector3i> positions;
+		positions.push_back(Eigen::Vector3i(1, 0, 0));
+		positions.push_back(Eigen::Vector3i(-1, 0, 0));
+		positions.push_back(Eigen::Vector3i(0, 1, 0));
+		positions.push_back(Eigen::Vector3i(0, -1, 0));
+		positions.push_back(Eigen::Vector3i(0, 0, 1));
+		positions.push_back(Eigen::Vector3i(0, 0, -1));
+
+		for (Eigen::Vector3i neighborPosition : positions) {
+			if (neighborPosition.x() < 0 || neighborPosition.x() >= dims.x() ||
+				neighborPosition.y() < 0 || neighborPosition.y() >= dims.y() ||
+				neighborPosition.z() < 0 || neighborPosition.z() >= dims.z())
+			{
+				return true;	// voxel_grid boundary is always surface
+			}
+			const Voxel& neighbor = voxel_grid.GetVoxel(neighborPosition);
+			if (neighbor.value == 0) {// a neighbor is not set => is on surface
+				return true;
 			}
 		}
+
+
+		//for (int dx = -1; dx <= 1; ++dx) {
+		//	for (int dy = -1; dy <= 1; ++dy) {
+		//		for (int dz = -1; dz <= 1; ++dz) {
+		//			if (dx == 0 && dy == 0 && dz == 0)
+		//				continue;
+		//			const Eigen::Vector3i neighborPosition = voxel_pos + Eigen::Vector3i(dx, dy, dz);
+		//			if (neighborPosition.x() < 0 || neighborPosition.x() >= dims.x() ||
+		//				neighborPosition.y() < 0 || neighborPosition.y() >= dims.y() ||
+		//				neighborPosition.z() < 0 || neighborPosition.z() >= dims.z())
+		//			{
+		//				return true;	// voxel_grid boundary is always surface
+		//			}
+		//			const Voxel& neighbor = voxel_grid.GetVoxel(neighborPosition);
+		//			if (neighbor.value == 0) {// a neighbor is not set => is on surface
+		//				return true;
+		//			}
+		//		}
+		//	}
+		//}
 		return false;	// fully enclosed in other set voxels
 	}
 
