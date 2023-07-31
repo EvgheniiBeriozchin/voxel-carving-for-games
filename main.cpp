@@ -33,7 +33,6 @@
 #define RUN_VOXEL_CARVING 1
 #define RUN_CAMERA_ESTIMATION_EXPORT 0
 #define RUN_TUTTE_EMBEDDING_TEST 0
-#define EXPORT_TEXTURED_MESH 1
 
 
 int NUM_PROCESSED_FRAMES = 25;
@@ -349,9 +348,21 @@ int main(int argc, char* argv[]) {
 		Eigen::MatrixXd colors = Eigen::MatrixXd::Random(V.rows(), 3);
 		colors = (colors + Eigen::MatrixXd::Constant(V.rows(), 3, 1.)) / 2.;
 
-		MeshExport::WriteObj("mesh", V, F, U, N, colors);
+		//check if params has output file name
+		std::string outputFileName = "mesh";
+		if (params.count("output") > 0) {
+			outputFileName = params["output-file-name"];
 
-		MeshExport::RenderTexture("mesh", U, F, colors);
+			//remove extension if it exists
+			size_t lastindex = outputFileName.find_last_of(".");
+			if (lastindex != std::string::npos) {
+				outputFileName = outputFileName.substr(0, lastindex);
+			}
+		}
+
+		MeshExport::WriteObj(outputFileName, V, F, U, N, colors);
+
+		MeshExport::RenderTexture(outputFileName, U, F, colors);
 
 	}
 
