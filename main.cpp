@@ -350,7 +350,7 @@ int main(int argc, char* argv[]) {
 
 		//check if params has output file name
 		std::string outputFileName = "mesh";
-		if (params.count("output") > 0) {
+		if (params.count("output-file-name") > 0) {
 			outputFileName = params["output-file-name"];
 
 			//remove extension if it exists
