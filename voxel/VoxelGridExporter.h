@@ -17,7 +17,7 @@ public:
 
         // Write the OFF file header
         file << "COFF" << std::endl;
-        std::vector<Eigen::Vector3i> voxelpositions = voxelGrid.GetBoundaryVoxels();
+        std::vector<Eigen::Vector3i> voxelpositions = voxelGrid.GetSetVoxels();
         std::vector<Eigen::Vector3d> voxels = voxelGrid.GetVoxelCenterPoints(voxelpositions);
         std::vector<cv::Vec3d> colors;
         for each (Eigen::Vector3i pos in voxelpositions)
