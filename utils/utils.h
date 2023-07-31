@@ -89,6 +89,8 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 		cv::noArray(), cv::noArray(), calibrationFlags
 	);
 
+	/* DEBUGGING CODE */
+	/*
 	for (int i = 0; i < NUM_CALIBRATION_FRAMES; i++)
 	{
 		cv::Mat imageCopy;
@@ -120,6 +122,7 @@ void calibrateCamera(cv::VideoCapture video, cv::aruco::ArucoDetector* detector,
 
 		cv::imwrite("./calibrationResults/frame-" + std::to_string(i) + ".jpg", imageCopy);
 	}
+	*/
 
 	/*
 	float cm_f[9] = { 1823.3715871387003, 0, 540,
