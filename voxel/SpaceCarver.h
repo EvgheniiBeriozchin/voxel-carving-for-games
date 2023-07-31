@@ -4,20 +4,33 @@
 #include <omp.h>
 
 
-// if greyscale color is greater than this its regarded as bright.
-const int DARK_THRESHOLD = 150;
 
-// if this percentage of cameras are inconsistent the voxel is inconsistent and will be carved
-const float INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
-const float MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
 
-// only use camera if camera_vector dot plane_normal greater than this value.(0 => above plane | 1 => equal to normal | ~0.6 => 45°)
-const float CAMERA_ABOVE_PLANE_THRESHOLD = 0;
+struct SpaceCarvingAttributes {
+public:
+	// if greyscale color is greater than this its regarded as bright.
+	int DARK_THRESHOLD = 0;
+	// if this percentage of cameras are inconsistent the voxel is inconsistent and will be carved
+	float INCONSISTENCY_THRESHOLD_PERCENTAGE = 0;
+	float MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = 0.5;
+	// only use camera if camera_vector dot plane_normal greater than this value.(0 => above plane | 1 => equal to normal | ~0.6 => 45°)
+	float CAMERA_ABOVE_PLANE_THRESHOLD = 0;
+};
+
+
 
 class SpaceCarver {
 public:
 	enum SpaceCarvingDirection { XPos, XNeg, YPos, YNeg, ZPos, ZNeg };
-	static bool PlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, SpaceCarvingDirection direction) {
+
+	int DARK_THRESHOLD;
+
+	float INCONSISTENCY_THRESHOLD_PERCENTAGE;
+	float MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE;
+
+	float CAMERA_ABOVE_PLANE_THRESHOLD;
+
+	bool PlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, SpaceCarvingDirection direction) {
 		Eigen::Vector3d planeNormal;
 		bool removed = false;
 		int xStart, xEnd, yStart, yEnd, zStart, zEnd;
@@ -92,7 +105,7 @@ public:
 		return removed;
 	}
 
-	static void PrintProjectedGrid(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, std::string filename) {
+	void PrintProjectedGrid(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, std::string filename) {
 		return;
 		cv::Mat tf;
 		cameras[0].frame.copyTo(tf);
@@ -107,7 +120,11 @@ public:
 		cv::imwrite(filename, tf);
 	}
 
-	static void MultiSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras) {
+	void MultiSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, SpaceCarvingAttributes attributes) {
+		DARK_THRESHOLD = attributes.DARK_THRESHOLD;
+		INCONSISTENCY_THRESHOLD_PERCENTAGE = attributes.INCONSISTENCY_THRESHOLD_PERCENTAGE;
+		MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE = attributes.MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE;
+		CAMERA_ABOVE_PLANE_THRESHOLD = attributes.CAMERA_ABOVE_PLANE_THRESHOLD;
 		//TODO: Step3 / Step4
 		// Plane sweep in all directions
 		int i = 0;
@@ -155,7 +172,7 @@ public:
 		}
 	}
 private:
-	static bool SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
+	bool SinglePlaneSweep(VoxelGrid& voxel_grid, std::vector<Camera>& cameras, const Eigen::Vector3d& planeNormal, int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd) {
 		bool removed = false;
 		// Peel a single layer
 #pragma omp parallel for collapse(3) reduction(||:removed)
@@ -202,7 +219,7 @@ private:
 		}
 		return removed;
 	}
-	static bool IsSurfaceVoxel(VoxelGrid& voxel_grid, Eigen::Vector3i voxel_pos) {
+	bool IsSurfaceVoxel(VoxelGrid& voxel_grid, Eigen::Vector3i voxel_pos) {
 		auto dims = voxel_grid.GetDimensions();
 		std::vector<Eigen::Vector3i> positions;
 		positions.push_back(Eigen::Vector3i(1, 0, 0));
@@ -248,7 +265,7 @@ private:
 		return false;	// fully enclosed in other set voxels
 	}
 
-	static std::vector<Camera> GetCamerasForPlaneVoxel(const Eigen::Vector3d& voxel_world_pos, const Eigen::Vector3d& planeNormal, const std::vector<Camera> cameras) {
+	std::vector<Camera> GetCamerasForPlaneVoxel(const Eigen::Vector3d& voxel_world_pos, const Eigen::Vector3d& planeNormal, const std::vector<Camera> cameras) {
 		std::vector<Camera> cams;
 		for each (Camera camera in cameras)
 		{
@@ -260,7 +277,7 @@ private:
 		}
 		return cams;
 	}
-	static bool IsCameraAbovePlane(const Camera& camera, const Eigen::Vector3d& planePoint, const Eigen::Vector3d& planeNormal) {
+	bool IsCameraAbovePlane(const Camera& camera, const Eigen::Vector3d& planePoint, const Eigen::Vector3d& planeNormal) {
 		// for better result use clipping in pyramidal beam instead of plane
 		// TODO:
 		Eigen::Vector3d cp = camera.pose.block<3, 1>(0, 3).cast<double>();
@@ -273,7 +290,7 @@ private:
 
 		return distance;
 	}
-	static bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras, bool multiSweep = false) {
+	bool CheckPhotoConsistency(const Eigen::Vector3d& voxel_world_pos, const std::vector<Eigen::Vector2i>& pixelsPositions, const std::vector<Camera> PixelCameras, bool multiSweep = false) {
 		bool consistent = true;
 		int i = 0;
 		float threshold = multiSweep ? MULTI_SWEEP_INCONSISTENCY_THRESHOLD_PERCENTAGE : INCONSISTENCY_THRESHOLD_PERCENTAGE;
@@ -289,7 +306,7 @@ private:
 		return consistent;
 	}
 
-	static bool MultiSweepConsistency(VoxelGrid& voxel_grid, const std::vector<Camera> cameras) {
+	bool MultiSweepConsistency(VoxelGrid& voxel_grid, const std::vector<Camera> cameras) {
 		std::vector<Eigen::Vector3i> setVoxelPositions = voxel_grid.GetSetVoxels();
 		bool removed = false;
 		for (int i = 0; i < setVoxelPositions.size(); i++) {
