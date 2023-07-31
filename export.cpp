@@ -1,32 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-// Include GLEW
-#include <GL/glew.h>
-
-// Include GLFW
-#include <GLFW/glfw3.h>
-GLFWwindow* window;
-
-// Include GLM
-#include <glm/glm.hpp>
-using namespace glm;
-
-using namespace std;
-
-#include <iostream>
-#include <string>
-#include <Eigen/Core>
-
-#include <TutteEmbedding.h>
-
-#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-#endif // !STB_IMAGE_WRITE_IMPLEMENTATION
-
-#include "export.h"
-using namespace MeshExport;
+#include <export.h>
 
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path) {
 
@@ -35,10 +7,10 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
 	// Read the Vertex Shader code from the file
-	string VertexShaderCode;
-	ifstream VertexShaderStream(vertex_file_path, std::ios::in);
+	std::string VertexShaderCode;
+	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
 	if (VertexShaderStream.is_open()) {
-		stringstream sstr;
+		std::stringstream sstr;
 		sstr << VertexShaderStream.rdbuf();
 		VertexShaderCode = sstr.str();
 		VertexShaderStream.close();
@@ -50,10 +22,10 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	}
 
 	// Read the Fragment Shader code from the file
-	string FragmentShaderCode;
-	ifstream FragmentShaderStream(fragment_file_path, ios::in);
+	std::string FragmentShaderCode;
+	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
 	if (FragmentShaderStream.is_open()) {
-		stringstream sstr;
+		std::stringstream sstr;
 		sstr << FragmentShaderStream.rdbuf();
 		FragmentShaderCode = sstr.str();
 		FragmentShaderStream.close();
@@ -73,7 +45,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
 	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	if (InfoLogLength > 0) {
-		vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
+		std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
 		printf("%s\n", &VertexShaderErrorMessage[0]);
 	}
@@ -90,7 +62,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
 	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	if (InfoLogLength > 0) {
-		vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
+		std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
 		printf("%s\n", &FragmentShaderErrorMessage[0]);
 	}
@@ -108,7 +80,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
 	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	if (InfoLogLength > 0) {
-		vector<char> ProgramErrorMessage(InfoLogLength + 1);
+		std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
 		glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
 		printf("%s\n", &ProgramErrorMessage[0]);
 	}
@@ -171,8 +143,8 @@ void MeshExport::RenderTexture(std::string textureName, Eigen::MatrixXd& U, Eige
 	// Create and compile our GLSL program from the shaders
 	GLuint programID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader");
 
-	vector<GLfloat> g_vertex_buffer_data;
-	vector<GLfloat> g_color_buffer_data;
+	std::vector<GLfloat> g_vertex_buffer_data;
+	std::vector<GLfloat> g_color_buffer_data;
 
 	for (int i = 0; i < F.rows(); i++) {
 		//Get the three vertices of the face
@@ -278,11 +250,11 @@ void MeshExport::RenderTexture(std::string textureName, Eigen::MatrixXd& U, Eige
 
 }
 
-void MeshExport::WriteObj(string objName, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N, Eigen::MatrixXd& Col)
+void MeshExport::WriteObj(std::string objName, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& U, Eigen::MatrixXd& N, Eigen::MatrixXd& Col)
 {
 	std::cout << "Writing OBJ file " << objName << ".obj" << std::endl;
-	ofstream myfile;
-	string filename = objName + ".obj";
+	std::ofstream myfile;
+	std::string filename = objName + ".obj";
 
 
 	size_t lastindex = filename.find_last_of("/");

@@ -17,6 +17,8 @@ struct Voxel {
 };
 
 class VoxelGrid {
+
+	Voxel Zero = Voxel(0);
 public:
 	VoxelGrid(double voxelSize, const Eigen::Vector3d& origin) : VoxelGrid(voxelSize, origin, Eigen::Vector3i().Zero()) {
 	}
@@ -53,7 +55,7 @@ public:
 	Voxel& GetVoxel(const Eigen::Vector3i& position) {
 		int index = GetIndex(position);
 		if(index < 0 || index >= voxels_.size())
-			return Voxel(0);
+			return Zero;
 		return voxels_[index];
 	}
 
