@@ -30,6 +30,10 @@ In cmake gui the following builds the program
   - Add the following path: absolute_path_to_opencv_build\bin\Debug
   - Restart the machine.
 
+# Run 
+To run, open the project in Visual Studio and either run with standard parameters or change the parameters as explained below.
+The only entrypoint to the code is main.cpp.
+
 # Parameters
 
 ## How to setup the Voxel Grid
